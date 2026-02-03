@@ -1,0 +1,9 @@
+{
+  "name": "@cogumi/agent-test-endpoint-python",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "python src/main.py",
+    "start": "python src/main.py"
+  }
+}

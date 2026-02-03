@@ -1,0 +1,116 @@
+# Self-Hosted COGUMI AI Protect
+# Production-ready Docker Compose for customer deployments
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: cogumi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cogumi}
+      POSTGRES_USER: ${POSTGRES_USER:-cogumi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cogumi}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Optional - for background jobs and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: cogumi-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # COGUMI Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.customer
+      args:
+        NODE_VERSION: 20
+    container_name: cogumi-web
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cogumi}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cogumi}
+      
+      # Redis (optional)
+      REDIS_URL: redis://redis:6379
+      
+      # NextAuth
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      
+      # App Config
+      NODE_ENV: production
+      PORT: 3000
+      
+      # Cron Secret (for scheduled jobs)
+      CRON_SECRET: ${CRON_SECRET}
+      
+      # Optional: Google OAuth (if using)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    volumes:
+      - ./uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Go Sidecar Proxy (deployed alongside AI agents)
+  # Note: This is typically deployed separately, close to your AI agents
+  # Included here for reference and testing
+  sidecar:
+    build:
+      context: ./apps/sidecar
+      dockerfile: Dockerfile
+    container_name: cogumi-sidecar
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      COGUMI_API_URL: http://web:3000
+      SIDECAR_TOKEN: ${SIDECAR_TOKEN}
+      HTTP_BIND: 0.0.0.0:8888
+    ports:
+      - "${SIDECAR_PORT:-8888}:8888"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8888/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

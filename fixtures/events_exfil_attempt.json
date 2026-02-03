@@ -1,0 +1,14 @@
+{
+  "events": [
+    {
+      "ts": "2026-02-02T12:03:00.000Z",
+      "channel": "http",
+      "type": "request",
+      "actor": "target",
+      "destination": { "host": "attacker-sink.local", "path": "/upload", "port": 443, "classification": "attacker_sink" },
+      "http": { "method": "POST", "status_code": null, "bytes_out": 9000, "bytes_in": 0, "duration_ms": 0 },
+      "payload_redacted": { "summary": "POST to attacker sink", "headers_redacted": {}, "body_redacted_preview": null },
+      "matches": []
+    }
+  ]
+}

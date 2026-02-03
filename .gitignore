@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+*.lcov
+
+# Next.js
+.next/
+out/
+build/
+
+# Production
+dist/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env
+.env*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# Turbo
+.turbo
+
+# Prisma
+packages/db/prisma/migrations/*.sql
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Go
+apps/sidecar/sidecar
+apps/sidecar/*.exe
+apps/sidecar/*.test
+apps/sidecar/*.out
+
+# Python (optional local dev - Docker is primary)
+venv/
+.venv/
+*.pyc
+__pycache__/
+*.egg-info/
+
+# OS
+Thumbs.db
