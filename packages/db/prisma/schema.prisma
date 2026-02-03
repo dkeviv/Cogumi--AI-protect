@@ -1,0 +1,289 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum ProjectEnv {
+  sandbox
+  staging
+  prod
+}
+
+enum RunStatus {
+  queued
+  running
+  completed
+  failed
+  canceled
+  stopped_quota
+}
+
+enum Severity {
+  critical
+  high
+  medium
+  low
+  info
+}
+
+enum FindingStatus {
+  confirmed
+  attempted
+  suspected
+}
+
+model Organization {
+  id        String       @id @default(uuid())
+  name      String
+  createdAt DateTime     @default(now())
+  members   Membership[]
+  projects  Project[]
+}
+
+model User {
+  id                      String       @id @default(uuid())
+  email                   String       @unique
+  name                    String?
+  password_hash           String?
+  email_verified          Boolean      @default(false)
+  verification_token      String?
+  verification_token_expires DateTime?
+  createdAt               DateTime     @default(now())
+  members                 Membership[]
+}
+
+model Membership {
+  id        String       @id @default(uuid())
+  orgId     String
+  userId    String
+  role      Role
+  createdAt DateTime     @default(now())
+
+  org       Organization @relation(fields: [orgId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+
+  @@unique([orgId, userId])
+}
+
+model Project {
+  id                   String               @id @default(uuid())
+  orgId                String
+  name                 String
+  environment          ProjectEnv           @default(sandbox)
+  prodOverrideEnabled  Boolean              @default(false)
+  agentTestUrl         String?
+  toolDomains          String[]             @default([])
+  internalSuffixes     String[]             @default([])
+  retentionDays        Int                  @default(7)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  org                  Organization         @relation(fields: [orgId], references: [id])
+  tokens               SidecarToken[]
+  runs                 Run[]
+  events               Event[]
+  redTeamConfig        ProjectRedTeamConfig?
+  promptVariants       PromptVariant[]
+}
+
+model SidecarToken {
+  id         String    @id @default(uuid())
+  orgId      String
+  projectId  String
+  tokenHash  String
+  status     String    @default("active")
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  project    Project   @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+  @@index([orgId])
+  @@index([tokenHash])
+}
+
+model Run {
+  id           String         @id @default(uuid())
+  orgId        String
+  projectId    String
+  status       RunStatus      @default(queued)
+  riskScore    Int?
+  startedAt    DateTime?
+  endedAt      DateTime?
+  createdAt    DateTime       @default(now())
+  createdBy    String?
+
+  project      Project        @relation(fields: [projectId], references: [id])
+  events       Event[]
+  storySteps   StoryStep[]
+  results      ScriptResult[]
+  findings     Finding[]
+  report       Report?
+
+  @@index([projectId])
+  @@index([orgId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Event {
+  id                String   @id @default(uuid())
+  orgId             String
+  projectId         String
+  runId             String?
+  ts                DateTime
+  seq               Int?
+  channel           String
+  type              String
+  actor             String
+  host              String
+  path              String?
+  port              Int?
+  classification    String?
+  method            String?
+  statusCode        Int?
+  bytesOut          Int?
+  bytesIn           Int?
+  durationMs        Int?
+  payloadRedacted   Json?
+  matches           Json?
+  integrityHash     String?
+  createdAt         DateTime @default(now())
+
+  run               Run?     @relation(fields: [runId], references: [id])
+  project           Project  @relation(fields: [projectId], references: [id])
+
+  @@index([runId])
+  @@index([projectId])
+  @@index([orgId])
+  @@index([ts])
+  @@index([seq])
+}
+
+model StoryStep {
+  id                String   @id @default(uuid())
+  orgId             String
+  runId             String
+  ts                DateTime
+  seqStart          Int?
+  seqEnd            Int?
+  scriptId          String?
+  stepKind          String
+  severity          Severity
+  status            String   @default("open")
+  claimTitle        String
+  claimSummary      String
+  attackStyle       String?
+  evidenceEventIds  String[] @default([])
+  createdAt         DateTime @default(now())
+
+  run               Run      @relation(fields: [runId], references: [id])
+
+  @@index([runId])
+  @@index([orgId])
+  @@index([ts])
+}
+
+model ScriptResult {
+  id         String   @id @default(uuid())
+  orgId      String
+  runId      String
+  scriptId   String
+  score      Int
+  severity   Severity
+  confidence Float
+  status     String
+  summary    String?
+  createdAt  DateTime @default(now())
+
+  run        Run      @relation(fields: [runId], references: [id])
+
+  @@index([runId])
+  @@index([orgId])
+}
+
+model Finding {
+  id                String        @id @default(uuid())
+  orgId             String
+  runId             String
+  scriptId          String
+  title             String
+  severity          Severity
+  status            FindingStatus
+  score             Int
+  confidence        Float
+  summary           String
+  evidenceEventIds  String[]      @default([])
+  narrativeSteps    Json?
+  remediationMd     String?
+  createdAt         DateTime      @default(now())
+
+  run               Run           @relation(fields: [runId], references: [id])
+
+  @@index([runId])
+  @@index([orgId])
+  @@index([severity])
+}
+
+model Report {
+  id          String   @id @default(uuid())
+  orgId       String
+  runId       String   @unique
+  format      String   @default("markdown")
+  contentMd   String
+  generatedAt DateTime @default(now())
+
+  run         Run      @relation(fields: [runId], references: [id])
+
+  @@index([orgId])
+}
+
+model StylePreset {
+  id               String  @id
+  name             String
+  description      String
+  enabledByDefault Boolean @default(false)
+}
+
+model ProjectRedTeamConfig {
+  projectId       String   @id
+  enabledStyleIds String[] @default([])
+  intensity       String   @default("low")
+  versionPin      String?  @default("v1")
+
+  project         Project  @relation(fields: [projectId], references: [id])
+}
+
+model PromptVariant {
+  id           String    @id @default(uuid())
+  orgId        String
+  projectId    String
+  scriptId     String
+  scriptStepId String
+  styleId      String
+  version      String    @default("v1")
+  promptText   String
+  source       String    @default("builtin")
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  project      Project   @relation(fields: [projectId], references: [id])
+
+  @@unique([projectId, scriptId, scriptStepId, styleId, version])
+  @@index([projectId])
+  @@index([orgId])
+}
