@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getOrgId } from "@/lib/session";
-import { executeRun } from "@/lib/run-orchestrator";
+import { enqueueRunExecution } from "@/lib/queue";
 
 /**
  * POST /api/runs/[id]/execute
  * 
- * Manually trigger run execution.
- * 
- * In production, this would be handled by a worker queue (BullMQ).
- * For MVP, this endpoint allows triggering runs directly.
+ * Trigger run execution via BullMQ worker queue.
+ * Jobs are processed asynchronously with automatic retries.
  */
 export async function POST(
   req: NextRequest,
@@ -45,18 +43,21 @@ export async function POST(
       );
     }
 
-    // Execute run asynchronously (don't wait for completion)
-    // In production, this would enqueue to BullMQ
-    executeRun(runId).catch((error) => {
-      console.error(`Run ${runId} execution failed:`, error);
-    });
+    // Enqueue run execution to BullMQ
+    const job = await enqueueRunExecution(runId);
+
+    console.log(`Enqueued run ${runId} for execution (job ${job.id})`);
 
     return NextResponse.json({
       ok: true,
-      message: "Run execution started",
+      message: "Run enqueued for execution",
       run: {
         id: run.id,
-        status: "running",
+        status: "queued",
+      },
+      job: {
+        id: job.id,
+        queueName: "run-execution",
       },
     });
   } catch (error) {

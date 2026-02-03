@@ -3,6 +3,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { canIngestEvents } from "@/lib/quota-service";
+import { checkIngestRateLimit } from "@/lib/rate-limiter";
 
 // Zod schema for sidecar event (matches sidecar/main.go Event struct)
 const SecretMatchSchema = z.object({
@@ -97,6 +98,35 @@ export async function POST(req: NextRequest) {
     }
 
     const { events } = validation.data;
+
+    // Check rate limit (events per minute)
+    const rateLimit = await checkIngestRateLimit(matchedToken.id, events.length);
+    
+    if (!rateLimit.allowed) {
+      console.warn(
+        `Rate limit exceeded for token ${matchedToken.id}: ` +
+        `${events.length} events rejected (${rateLimit.remaining}/${rateLimit.limit} remaining)`
+      );
+      
+      return NextResponse.json(
+        {
+          error: "Rate limit exceeded",
+          message: `Maximum ${rateLimit.limit} events per minute`,
+          limit: rateLimit.limit,
+          remaining: rateLimit.remaining,
+          resetAt: rateLimit.resetAt,
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Limit": rateLimit.limit.toString(),
+            "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+            "X-RateLimit-Reset": rateLimit.resetAt.toISOString(),
+            "Retry-After": Math.ceil((rateLimit.resetAt.getTime() - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
 
     // Find or create an active run for this project
     // For now, we'll associate events with the most recent non-completed run

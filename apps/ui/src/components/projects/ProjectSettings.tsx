@@ -26,6 +26,12 @@ export function ProjectSettings({ project }: { project: Project }) {
     prodOverrideEnabled: project.prodOverrideEnabled,
   });
 
+  // Production override confirmations
+  const [prodConfirm1, setProdConfirm1] = useState(project.prodOverrideEnabled);
+  const [prodConfirm2, setProdConfirm2] = useState(project.prodOverrideEnabled);
+  const [prodConfirm3, setProdConfirm3] = useState(project.prodOverrideEnabled);
+  const allConfirmationsChecked = prodConfirm1 && prodConfirm2 && prodConfirm3;
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -94,7 +100,7 @@ export function ProjectSettings({ project }: { project: Project }) {
           internalSuffixes,
           retentionDays: formData.retentionDays,
           environment: formData.environment,
-          prodOverrideEnabled: formData.prodOverrideEnabled,
+          prodOverrideEnabled: formData.environment === 'prod' ? allConfirmationsChecked : false,
         }),
       });
 
@@ -192,17 +198,66 @@ export function ProjectSettings({ project }: { project: Project }) {
           </div>
 
           {formData.environment === 'prod' && (
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="prodOverride"
-                checked={formData.prodOverrideEnabled}
-                onChange={(e) => setFormData({ ...formData, prodOverrideEnabled: e.target.checked })}
-                className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="prodOverride" className="ml-2 text-sm text-gray-700">
-                I understand the risks of running tests in production
-              </label>
+            <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1">
+                  <h4 className="text-sm font-bold text-red-800 mb-2">
+                    ⚠️ DANGER: Production Environment Testing
+                  </h4>
+                  <p className="text-sm text-red-700 mb-4">
+                    You must confirm all safety requirements to enable production testing.
+                  </p>
+                  
+                  <div className="space-y-3">
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        checked={prodConfirm1}
+                        onChange={(e) => setProdConfirm1(e.target.checked)}
+                        className="mt-1 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="ml-3 text-sm text-red-900">
+                        <strong>This is NOT customer-facing production traffic.</strong>
+                      </span>
+                    </label>
+
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        checked={prodConfirm2}
+                        onChange={(e) => setProdConfirm2(e.target.checked)}
+                        className="mt-1 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="ml-3 text-sm text-red-900">
+                        <strong>No real customer secrets or sensitive data exist here.</strong>
+                      </span>
+                    </label>
+
+                    <label className="flex items-start">
+                      <input
+                        type="checkbox"
+                        checked={prodConfirm3}
+                        onChange={(e) => setProdConfirm3(e.target.checked)}
+                        className="mt-1 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                      />
+                      <span className="ml-3 text-sm text-red-900">
+                        <strong>I accept that adversarial prompts MAY trigger unsafe agent behavior.</strong>
+                      </span>
+                    </label>
+                  </div>
+
+                  {!allConfirmationsChecked && (
+                    <p className="mt-3 text-xs text-red-600 font-semibold">
+                      ⚠️ All three confirmations are required
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

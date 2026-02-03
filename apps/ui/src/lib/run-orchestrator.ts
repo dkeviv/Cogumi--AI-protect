@@ -27,10 +27,17 @@ export interface FindingInput {
 }
 
 /**
- * Execute a complete run
+ * Execute a complete run with duration timeout
  */
 export async function executeRun(runId: string): Promise<void> {
   console.log(`Starting run execution: ${runId}`);
+
+  // Get configurable duration cap (default 30 minutes)
+  const maxDurationMinutes = parseInt(process.env.MAX_RUN_DURATION_MINUTES || "30", 10);
+  const maxDurationMs = maxDurationMinutes * 60 * 1000;
+  
+  let timeoutId: NodeJS.Timeout | null = null;
+  let timedOut = false;
 
   try {
     // Get run and project
@@ -58,7 +65,21 @@ export async function executeRun(runId: string): Promise<void> {
       },
     });
 
-    console.log(`Run ${runId} status: running`);
+    console.log(`Run ${runId} status: running (max duration: ${maxDurationMinutes} minutes)`);
+
+    // Set timeout to stop run if it exceeds duration cap
+    timeoutId = setTimeout(async () => {
+      timedOut = true;
+      console.warn(`Run ${runId} exceeded maximum duration of ${maxDurationMinutes} minutes`);
+      
+      await db.run.update({
+        where: { id: runId },
+        data: {
+          status: "stopped_quota",
+          endedAt: new Date(),
+        },
+      });
+    }, maxDurationMs);
 
     // Execute all scripts
     const scriptResults = await executeAllScripts({
@@ -67,6 +88,12 @@ export async function executeRun(runId: string): Promise<void> {
       projectId: run.projectId,
       orgId: run.orgId,
     });
+
+    // Check if we timed out during execution
+    if (timedOut) {
+      console.log(`Run ${runId} was stopped due to timeout, skipping post-processing`);
+      return;
+    }
 
     console.log(`Completed ${scriptResults.length} scripts for run ${runId}`);
 
@@ -94,16 +121,23 @@ export async function executeRun(runId: string): Promise<void> {
   } catch (error) {
     console.error(`Run ${runId} failed:`, error);
 
-    // Update run status to failed
-    await db.run.update({
-      where: { id: runId },
-      data: {
-        status: "failed",
-        endedAt: new Date(),
-      },
-    });
+    // Only update if not already stopped by timeout
+    if (!timedOut) {
+      await db.run.update({
+        where: { id: runId },
+        data: {
+          status: "failed",
+          endedAt: new Date(),
+        },
+      });
+    }
 
     throw error;
+  } finally {
+    // Clear timeout if run completed before timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 

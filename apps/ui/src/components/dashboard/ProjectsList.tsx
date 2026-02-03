@@ -200,8 +200,14 @@ function CreateProjectModal({
   const [name, setName] = useState('');
   const [environment, setEnvironment] = useState<'sandbox' | 'staging' | 'prod'>('sandbox');
   const [prodOverride, setProdOverride] = useState(false);
+  const [prodConfirm1, setProdConfirm1] = useState(false); // Not customer-facing
+  const [prodConfirm2, setProdConfirm2] = useState(false); // No real secrets
+  const [prodConfirm3, setProdConfirm3] = useState(false); // Accept unsafe behavior
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // All 3 confirmations must be checked to enable prod override
+  const allConfirmationsChecked = prodConfirm1 && prodConfirm2 && prodConfirm3;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -215,7 +221,7 @@ function CreateProjectModal({
         body: JSON.stringify({
           name,
           environment,
-          prodOverrideEnabled: prodOverride,
+          prodOverrideEnabled: environment === 'prod' ? allConfirmationsChecked : false,
         }),
       });
 
@@ -323,7 +329,7 @@ function CreateProjectModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || (environment === 'prod' && !prodOverride)}
+              disabled={isSubmitting || (environment === 'prod' && !allConfirmationsChecked)}
               className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Creating...' : 'Create Project'}
