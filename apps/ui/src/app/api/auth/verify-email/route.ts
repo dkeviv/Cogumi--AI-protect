@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     // Generate verification token (same logic as register)
     const verificationToken = randomBytes(32).toString('hex');
     const verificationTokenHash = createHash('sha256').update(verificationToken).digest('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour (security best practice)
 
     await prisma.user.update({
       where: { id: user.id },
@@ -71,7 +71,8 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('token');
 
   if (!token) {
-    return NextResponse.json({ error: 'Missing token' }, { status: 400 });
+    // Redirect to login with error
+    return NextResponse.redirect(new URL('/login?error=missing_token', req.url));
   }
 
   try {
@@ -88,10 +89,8 @@ export async function GET(req: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 400 }
-      );
+      // Redirect to login with error (invalid or expired)
+      return NextResponse.redirect(new URL('/login?error=invalid_or_expired_token', req.url));
     }
 
     await prisma.user.update({
@@ -103,12 +102,11 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ message: 'Email verified successfully' });
+    // Redirect to login with success message
+    return NextResponse.redirect(new URL('/login?verified=true', req.url));
   } catch (error) {
     console.error('Verify email error:', error);
-    return NextResponse.json(
-      { error: 'Failed to verify email' },
-      { status: 500 }
-    );
+    // Redirect to login with error
+    return NextResponse.redirect(new URL('/login?error=verification_failed', req.url));
   }
 }

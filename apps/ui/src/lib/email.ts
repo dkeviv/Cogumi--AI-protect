@@ -95,7 +95,7 @@ export const EmailTemplates = {
                     </p>
                     
                     <p style="margin: 30px 0 0; font-size: 13px; color: #8a8a8a; border-top: 1px solid #e5e5e5; padding-top: 20px;">
-                      This link will expire in 24 hours. If you didn't create an account, you can safely ignore this email.
+                      ⏱️ <strong>This verification link will expire in 1 hour.</strong> If you didn't create an account, you can safely ignore this email.
                     </p>
                   </td>
                 </tr>
@@ -125,7 +125,7 @@ ${verificationUrl}
 
 Email: ${email}
 
-This link will expire in 24 hours.
+⏱️ This verification link will expire in 1 hour.
 
 If you didn't create an account, you can safely ignore this email.
 

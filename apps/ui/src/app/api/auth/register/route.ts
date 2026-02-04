@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     // Generate verification token (plaintext for email)
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    const verificationExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour (security best practice)
     
     // Hash token for storage
     const verificationTokenHash = crypto

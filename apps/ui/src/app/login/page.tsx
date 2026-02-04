@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 const loginSchema = z.object({
@@ -17,12 +17,31 @@ type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResendVerification, setShowResendVerification] = useState(false);
   const [resendEmail, setResendEmail] = useState('');
   const [resendSuccess, setResendSuccess] = useState(false);
   const [isResending, setIsResending] = useState(false);
+
+  // Check for verification status or errors from URL params
+  useEffect(() => {
+    const verified = searchParams.get('verified');
+    const urlError = searchParams.get('error');
+
+    if (verified === 'true') {
+      setSuccessMessage('✅ Email verified successfully! You can now sign in.');
+    } else if (urlError) {
+      const errorMessages: Record<string, string> = {
+        'missing_token': 'Verification link is invalid. Please try again.',
+        'invalid_or_expired_token': 'Verification link is invalid or has expired. Please request a new one.',
+        'verification_failed': 'Email verification failed. Please try again.',
+      };
+      setError(errorMessages[urlError] || 'An error occurred during verification.');
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -35,6 +54,7 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     setError('');
+    setSuccessMessage('');
     setShowResendVerification(false);
     setResendSuccess(false);
 
@@ -110,6 +130,11 @@ export default function LoginPage() {
           </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          {successMessage && (
+            <div className="rounded-md bg-green-50 p-4">
+              <p className="text-sm text-green-800">{successMessage}</p>
+            </div>
+          )}
           {error && (
             <div className="rounded-md bg-red-50 p-4">
               <p className="text-sm text-red-800">{error}</p>
