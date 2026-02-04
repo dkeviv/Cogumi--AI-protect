@@ -60,7 +60,62 @@
 
 ---
 
-## 🚀 Quick Start (Docker-first)
+## 🚀 Quick Start with Demo Agent (5 minutes)
+
+**NEW:** We now include a demo AI agent for instant end-to-end testing!
+
+### Prerequisites
+
+- Docker + Docker Compose
+- OpenRouter API key (get free at https://openrouter.ai/keys)
+
+### 1. Configure Environment
+
+```bash
+# Copy and edit .env
+cp .env.example .env
+nano .env
+
+# Add required values:
+# - NEXTAUTH_SECRET (generate with: openssl rand -hex 32)
+# - OPENROUTER_API_KEY (for demo agent)
+```
+
+### 2. Start Everything
+
+```bash
+# Start platform + demo agent
+docker-compose up -d
+
+# Watch logs
+docker-compose logs -f
+```
+
+This starts:
+- ✅ Web UI (http://localhost:3000)
+- ✅ Worker (background)
+- ✅ Postgres + Redis
+- ✅ **Demo Agent** (http://localhost:3001) - Intentionally vulnerable AI agent
+
+### 3. Run Your First Test
+
+1. Open http://localhost:3000
+2. Create account
+3. Create project with Agent Test URL: `http://demo-agent:3001/chat`
+4. Generate sidecar token
+5. Run sidecar locally:
+   ```bash
+   cd apps/sidecar
+   go run cmd/sidecar/main.go --token YOUR_TOKEN --api-url http://localhost:3000 --port 8080
+   ```
+6. Click "Run Tests" in UI
+7. Watch live exploit feed! 🎉
+
+**See full demo guide:** [DEMO.md](./DEMO.md)
+
+---
+
+## 📖 Alternative Setup (Production-Ready)
 
 ### Prerequisites
 

@@ -75,5 +75,19 @@ services:
     deploy:
       replicas: 1
 
+  # Demo AI Agent (for testing)
+  demo-agent:
+    build:
+      context: apps/demo-agent
+      dockerfile: Dockerfile
+    container_name: cogumi-demo-agent
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      PORT: 3001
+      HOST: 0.0.0.0
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
 volumes:
   postgres_data:
