@@ -233,8 +233,8 @@ export async function POST(req: NextRequest) {
             durationMs: null,
             payloadRedacted: {
               summary: `${event.method || "CONNECT"} ${event.host}${event.path || ""}`,
-              headers_redacted: event.headers || {},
-              body_redacted_preview: event.body_truncated
+              headersRedacted: event.headers || {},
+              bodyRedactedPreview: event.body_truncated
                 ? `${event.body?.substring(0, 200)}...`
                 : event.body || null,
             },
