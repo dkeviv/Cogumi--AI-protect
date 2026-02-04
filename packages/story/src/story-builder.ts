@@ -119,13 +119,15 @@ export async function buildStoryForRun(runId: string): Promise<StoryStep[]> {
   // 3. Process policy violations
   for (const violation of policyViolations) {
     const payload = violation.payloadRedacted as any;
+    const originalType = payload?.original_event_type || violation.type;
+    
     steps.push({
       runId,
       orgId: run.orgId,
       ts: violation.ts,
       seqStart: violation.seq || 0,
       seqEnd: violation.seq || 0,
-      stepKind: violation.type === "ingest_throttled" ? "quota" : "blocked",
+      stepKind: originalType === "ingest_throttled" ? "quota" : "blocked",
       severity: "medium",
       claimTitle: payload?.title || "Policy violation",
       claimSummary: payload?.summary || "Action blocked by policy",

@@ -101,16 +101,18 @@ model Project {
 }
 
 model SidecarToken {
-  id         String   @id @default(uuid())
-  orgId      String
-  projectId  String
-  tokenHash  String
-  status     String   @default("active")
-  lastSeenAt DateTime?
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  orgId       String
+  projectId   String
+  tokenHash   String
+  tokenPrefix String?  // First 8 chars of token for fast lookup (not sensitive)
+  status      String   @default("active")
+  lastSeenAt  DateTime?
+  createdAt   DateTime @default(now())
 
   project    Project  @relation(fields: [projectId], references: [id])
 
+  @@index([tokenPrefix])
   @@index([projectId])
   @@index([orgId])
 }

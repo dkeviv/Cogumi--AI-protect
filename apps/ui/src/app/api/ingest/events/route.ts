@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import bcrypt from "bcryptjs";
+import { authenticateSidecarToken, extractSidecarToken } from "@/lib/sidecar-auth";
 import { canIngestEvents } from "@/lib/quota-service";
 import { checkIngestRateLimit } from "@/lib/rate-limiter";
 
@@ -46,11 +46,7 @@ const EventBatchSchema = z.object({
  */
 export async function POST(req: NextRequest) {
   try {
-    // Extract token from headers
-    const authHeader = req.headers.get("authorization");
-    const sidecarHeader = req.headers.get("x-sidecar-token");
-    
-    const token = authHeader?.replace("Bearer ", "") || sidecarHeader;
+    const token = extractSidecarToken(req);
     
     if (!token) {
       return NextResponse.json(
@@ -59,13 +55,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse and validate request body
-    const body = await req.json();
-    const validation = EventBatchSchema.safeParse(body);
-
+    // Validate request body
+    const validation = ingestRequestSchema.safeParse(await req.json());
+    
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid event batch", details: validation.error.errors },
+        { error: "Invalid request format", details: validation.error.errors },
         { status: 400 }
       );
     }
@@ -79,47 +74,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract projectId from first event to narrow token lookup
+    // Extract projectId from first event for optimized token lookup
     const firstEventProjectId = events[0].project_id;
 
-    // Find active token by comparing hash
-    // OPTIMIZATION: Filter by projectId to reduce bcrypt comparisons from O(all_tokens) to O(tokens_per_project)
-    // Most projects have 1-2 active tokens, making this significantly faster than checking all org tokens.
-    const projectTokens = await db.sidecarToken.findMany({
-      where: { 
-        status: "active",
-        projectId: firstEventProjectId,
-      },
-      select: {
-        id: true,
-        orgId: true,
-        projectId: true,
-        tokenHash: true,
-      },
-    });
+    // Authenticate with projectId optimization
+    // This reduces bcrypt comparisons from O(all_tokens) to O(tokens_per_project)
+    const auth = await authenticateSidecarToken(token, firstEventProjectId);
 
-    let matchedToken = null;
-    for (const t of projectTokens) {
-      const isMatch = await bcrypt.compare(token, t.tokenHash);
-      if (isMatch) {
-        matchedToken = t;
-        break;
-      }
-    }
-
-    if (!matchedToken) {
+    if (!auth.valid || !auth.token) {
       return NextResponse.json(
-        { error: "Invalid or revoked token" },
+        { error: auth.error || "Invalid or revoked token" },
         { status: 401 }
       );
     }
 
+    // Extract authenticated token for use below (TypeScript null safety)
+    const authenticatedToken = auth.token;
+
     // Check rate limit (events per minute)
-    const rateLimit = await checkIngestRateLimit(matchedToken.id, events.length);
+    const rateLimit = await checkIngestRateLimit(authenticatedToken.id, events.length);
     
     if (!rateLimit.allowed) {
       console.warn(
-        `Rate limit exceeded for token ${matchedToken.id}: ` +
+        `Rate limit exceeded for token ${authenticatedToken.id}: ` +
         `${events.length} events rejected (${rateLimit.remaining}/${rateLimit.limit} remaining)`
       );
       
@@ -148,7 +125,7 @@ export async function POST(req: NextRequest) {
     // or create a new run if none exists
     const activeRun = await db.run.findFirst({
       where: {
-        projectId: matchedToken.projectId,
+        projectId: authenticatedToken.projectId,
         status: { in: ["queued", "running"] },
       },
       orderBy: { createdAt: "desc" },
@@ -197,6 +174,7 @@ export async function POST(req: NextRequest) {
           type = "policy.violation";
           actor = "system";
         } else if (event.event_type.includes("secret")) {
+          channel = "http"; // Secrets detected in HTTP traffic
           type = "secret.detected";
         }
 
@@ -211,11 +189,24 @@ export async function POST(req: NextRequest) {
         // Determine classification
         const classification = event.destination_type || "unknown";
 
+        // Build payload that preserves original event_type for story builder
+        const payloadRedacted: any = {
+          headersRedacted: event.headers || {},
+          bodyRedactedPreview: event.body?.substring(0, 500) || null,
+        };
+
+        // For policy violations, preserve the original event_type
+        if (event.event_type === "ingest_throttled") {
+          payloadRedacted.original_event_type = event.event_type;
+          payloadRedacted.title = "Ingest Rate Limit Exceeded";
+          payloadRedacted.summary = "Event ingestion was throttled due to rate limiting";
+        }
+
         // Create event in database
         return await db.event.create({
           data: {
-            orgId: matchedToken.orgId,
-            projectId: matchedToken.projectId,
+            orgId: authenticatedToken.orgId,
+            projectId: authenticatedToken.projectId,
             runId: runId,
             ts: new Date(event.timestamp),
             seq: runId ? index : 0, // Sequence per run; if no run, use 0
@@ -231,14 +222,8 @@ export async function POST(req: NextRequest) {
             bytesOut: null, // Sidecar doesn't send this yet
             bytesIn: null,
             durationMs: null,
-            payloadRedacted: {
-              summary: `${event.method || "CONNECT"} ${event.host}${event.path || ""}`,
-              headersRedacted: event.headers || {},
-              bodyRedactedPreview: event.body_truncated
-                ? `${event.body?.substring(0, 200)}...`
-                : event.body || null,
-            },
-            matches: matches.length > 0 ? matches : null,
+            payloadRedacted,
+            matches: matches.length > 0 ? matches : undefined,
             integrityHash: null, // TODO: compute hash of redacted payload
           },
         });
@@ -247,7 +232,7 @@ export async function POST(req: NextRequest) {
 
     // Update token last_seen_at (same as heartbeat)
     await db.sidecarToken.update({
-      where: { id: matchedToken.id },
+      where: { id: authenticatedToken.id },
       data: { lastSeenAt: new Date() },
     });
 

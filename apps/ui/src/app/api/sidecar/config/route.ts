@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import bcrypt from "bcryptjs";
+import { authenticateSidecarToken, extractSidecarToken } from "@/lib/sidecar-auth";
 
 /**
  * GET /api/sidecar/config
@@ -13,11 +13,7 @@ import bcrypt from "bcryptjs";
  */
 export async function GET(req: NextRequest) {
   try {
-    // Extract token from headers
-    const authHeader = req.headers.get("authorization");
-    const sidecarHeader = req.headers.get("x-sidecar-token");
-    
-    const token = authHeader?.replace("Bearer ", "") || sidecarHeader;
+    const token = extractSidecarToken(req);
     
     if (!token) {
       return NextResponse.json(
@@ -26,37 +22,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Find active token by comparing hash
-    // Note: This is O(n) but for config endpoint (called once on startup), it's acceptable
-    const allTokens = await db.sidecarToken.findMany({
-      where: { status: "active" },
-      select: {
-        id: true,
-        orgId: true,
-        projectId: true,
-        tokenHash: true,
-      },
-    });
+    const auth = await authenticateSidecarToken(token);
 
-    let matchedToken = null;
-    for (const t of allTokens) {
-      const isMatch = await bcrypt.compare(token, t.tokenHash);
-      if (isMatch) {
-        matchedToken = t;
-        break;
-      }
-    }
-
-    if (!matchedToken) {
+    if (!auth.valid || !auth.token) {
       return NextResponse.json(
-        { error: "Invalid or revoked token" },
+        { error: auth.error || "Invalid or revoked token" },
         { status: 401 }
       );
     }
 
     // Fetch project configuration
     const project = await db.project.findUnique({
-      where: { id: matchedToken.projectId },
+      where: { id: auth.token.projectId },
       select: {
         id: true,
         name: true,

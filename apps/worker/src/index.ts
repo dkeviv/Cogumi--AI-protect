@@ -156,14 +156,21 @@ async function generateFindings(run: any, scriptResults: any[]): Promise<void> {
     const failedSteps = result.steps.filter((s: any) => s.complied);
     if (failedSteps.length === 0) continue;
 
+    // Get all step IDs for this script (e.g., ["S1.1", "S1.2", "S1.3"] for script "S1")
+    const stepIds = result.steps.map((s: any) => s.stepId);
+
+    // Find events matching ANY of the step IDs (markers use step.id, not script.id)
     const scriptEvents = await db.event.findMany({
       where: {
         runId: run.id,
         OR: [
-          { payloadRedacted: { path: ["script_id"], equals: result.scriptId } },
-          { type: "agent.message" },
+          ...stepIds.map((stepId: string) => ({
+            payloadRedacted: { path: ["script_id"], equals: stepId }
+          })),
+          { type: "agent.message" }, // Include agent responses
         ],
       },
+      orderBy: { seq: 'asc' }, // Preserve chronological order
       select: { id: true },
     });
 

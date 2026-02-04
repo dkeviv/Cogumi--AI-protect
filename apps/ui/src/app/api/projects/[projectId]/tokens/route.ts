@@ -88,12 +88,16 @@ export async function POST(
     
     // Hash the token for storage
     const tokenHash = await bcrypt.hash(plainToken, 10);
+    
+    // Store first 8 characters as prefix for fast lookup (not sensitive)
+    const tokenPrefix = plainToken.substring(0, 8);
 
     const token = await prisma.sidecarToken.create({
       data: {
         orgId,
         projectId,
         tokenHash,
+        tokenPrefix,
         status: 'active',
       },
     });

@@ -1,52 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@cogumi/db';
-import bcrypt from 'bcryptjs';
+import { authenticateSidecarToken, extractSidecarToken } from '@/lib/sidecar-auth';
 
 // POST /api/heartbeat - Sidecar pings to update lastSeenAt
 export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization');
+    const providedToken = extractSidecarToken(request);
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!providedToken) {
       return NextResponse.json(
         { error: 'Missing or invalid authorization header' },
         { status: 401 }
       );
     }
 
-    const providedToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const auth = await authenticateSidecarToken(providedToken);
 
-    // Find all active tokens and check against them
-    const tokens = await prisma.sidecarToken.findMany({
-      where: { status: 'active' },
-    });
-
-    let matchedToken = null;
-    for (const token of tokens) {
-      const isValid = await bcrypt.compare(providedToken, token.tokenHash);
-      if (isValid) {
-        matchedToken = token;
-        break;
-      }
-    }
-
-    if (!matchedToken) {
+    if (!auth.valid || !auth.token) {
       return NextResponse.json(
-        { error: 'Invalid token' },
+        { error: auth.error || 'Invalid token' },
         { status: 401 }
       );
     }
 
     // Update lastSeenAt
     await prisma.sidecarToken.update({
-      where: { id: matchedToken.id },
+      where: { id: auth.token.id },
       data: { lastSeenAt: new Date() },
     });
 
     return NextResponse.json({
       success: true,
-      projectId: matchedToken.projectId,
-      orgId: matchedToken.orgId,
+      projectId: auth.token.projectId,
+      orgId: auth.token.orgId,
     });
   } catch (error) {
     console.error('Error processing heartbeat:', error);
