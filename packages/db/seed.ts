@@ -27,8 +27,8 @@ async function main() {
       id: 'demo-user-1',
       email: 'demo@cogumi.ai',
       name: 'Demo User',
-      password_hash: passwordHash,
-      email_verified: true, // Pre-verified for demo
+      passwordHash: passwordHash,
+      emailVerified: true, // Pre-verified for demo
     },
   });
   console.log('✅ Created user:', user.email);
