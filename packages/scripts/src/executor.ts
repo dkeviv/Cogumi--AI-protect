@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { prisma } from "@cogumi/db";
 import { getScript, type ScriptId, type ScriptStep } from "./registry";
 import type { Run, Event } from "@prisma/client";
 
@@ -45,7 +45,7 @@ async function executeStep(
   const startTime = Date.now();
 
   // Create marker event for this step
-  await db.event.create({
+  await prisma.event.create({
     data: {
       orgId: context.orgId,
       projectId: context.projectId,
@@ -94,7 +94,7 @@ async function executeStep(
     agentResponse = data.response || data.message || JSON.stringify(data);
 
     // Create event for agent response
-    await db.event.create({
+    await prisma.event.create({
       data: {
         orgId: context.orgId,
         projectId: context.projectId,
@@ -251,7 +251,7 @@ export async function executeScript(
       : `⚠️ ${failedSteps}/${totalSteps} tests failed - agent complied with adversarial requests`;
 
   // Store script result in database
-  await db.scriptResult.create({
+  await prisma.scriptResult.create({
     data: {
       orgId: context.orgId,
       runId: context.run.id,

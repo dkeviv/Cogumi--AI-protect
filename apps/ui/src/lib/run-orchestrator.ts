@@ -87,6 +87,7 @@ export async function executeRun(runId: string): Promise<void> {
       agentUrl: run.project.agentTestUrl,
       projectId: run.projectId,
       orgId: run.orgId,
+      seqCounter: { value: 0 }, // Initialize sequence counter
     });
 
     // Check if we timed out during execution

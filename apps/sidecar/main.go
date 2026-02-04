@@ -25,6 +25,14 @@ type Config struct {
 	ListenAddr string
 }
 
+// ProjectConfig fetched from SaaS API
+type ProjectConfig struct {
+	ProjectID        string   `json:"projectId"`
+	ProjectName      string   `json:"projectName"`
+	ToolDomains      []string `json:"toolDomains"`
+	InternalSuffixes []string `json:"internalSuffixes"`
+}
+
 // Event represents a captured HTTP event
 type Event struct {
 	EventType       string            `json:"event_type"`
@@ -59,6 +67,7 @@ type EventBatch struct {
 // Sidecar proxy server
 type Sidecar struct {
 	config        Config
+	projectConfig *ProjectConfig
 	client        *http.Client
 	eventBuffer   []Event
 	eventMutex    sync.Mutex
@@ -79,6 +88,11 @@ func main() {
 		},
 		eventBuffer: make([]Event, 0),
 		lastShip:    time.Now(),
+	}
+
+	// Fetch project configuration from SaaS API
+	if err := sidecar.fetchProjectConfig(); err != nil {
+		log.Printf("Warning: Failed to fetch project config: %v (will use default classification)", err)
 	}
 
 	// Start background tasks
@@ -268,17 +282,119 @@ func (s *Sidecar) handleConnect(w http.ResponseWriter, r *http.Request) {
 	io.Copy(clientConn, destConn)
 }
 
+// Fetch project configuration from SaaS API
+func (s *Sidecar) fetchProjectConfig() error {
+	url := fmt.Sprintf("%s/api/sidecar/config", s.config.APIURL)
+	
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.config.Token))
+	
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to fetch config: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("API returned status %d", resp.StatusCode)
+	}
+	
+	var config ProjectConfig
+	if err := json.NewDecoder(resp.Body).Decode(&config); err != nil {
+		return fmt.Errorf("failed to decode config: %w", err)
+	}
+	
+	s.projectConfig = &config
+	log.Printf("Loaded project config: %s (tools: %d, internal: %d)", 
+		config.ProjectName, len(config.ToolDomains), len(config.InternalSuffixes))
+	
+	return nil
+}
+
 // Classify destination type
 func (s *Sidecar) classifyDestination(host string) string {
-	// Check against configured tool domains and internal suffixes
-	// For now, simple classification
-	if strings.Contains(host, ".internal") || strings.Contains(host, ".local") {
-		return "internal"
+	hostLower := strings.ToLower(host)
+	
+	// Check customer-configured internal suffixes first
+	if s.projectConfig != nil {
+		for _, suffix := range s.projectConfig.InternalSuffixes {
+			if strings.HasSuffix(hostLower, strings.ToLower(suffix)) {
+				return "internal_api"
+			}
+		}
 	}
-	if strings.Contains(host, "api.openai.com") || strings.Contains(host, "api.anthropic.com") {
-		return "tool"
+	
+	// Built-in internal network patterns
+	if strings.Contains(hostLower, ".internal") || 
+	   strings.Contains(hostLower, ".local") || 
+	   strings.HasPrefix(hostLower, "localhost") ||
+	   strings.HasPrefix(hostLower, "127.") ||
+	   strings.HasPrefix(hostLower, "10.") ||
+	   strings.HasPrefix(hostLower, "192.168.") {
+		return "internal_api"
 	}
-	return "external"
+	
+	// Known LLM providers
+	llmProviders := []string{
+		"api.openai.com",
+		"api.anthropic.com",
+		"api.cohere.ai",
+		"api.together.xyz",
+		"generativelanguage.googleapis.com", // Google Gemini
+		"openrouter.ai",
+	}
+	for _, provider := range llmProviders {
+		if strings.Contains(hostLower, provider) {
+			return "llm_provider"
+		}
+	}
+	
+	// Customer-configured tool domains
+	if s.projectConfig != nil {
+		for _, tool := range s.projectConfig.ToolDomains {
+			if strings.Contains(hostLower, strings.ToLower(tool)) {
+				return "tool"
+			}
+		}
+	}
+	
+	// Common tool/service domains (fallback)
+	toolDomains := []string{
+		"api.stripe.com",
+		"api.github.com",
+		"api.slack.com",
+		"hooks.slack.com",
+		"discord.com",
+		"api.twilio.com",
+		"sendgrid.com",
+	}
+	for _, tool := range toolDomains {
+		if strings.Contains(hostLower, tool) {
+			return "tool"
+		}
+	}
+	
+	// Suspicious attacker sink patterns (pastebin-like, data exfil services)
+	attackerSinks := []string{
+		"pastebin.com",
+		"hastebin.com",
+		"dpaste.com",
+		"requestbin",
+		"webhook.site",
+		"pipedream.net",
+	}
+	for _, sink := range attackerSinks {
+		if strings.Contains(hostLower, sink) {
+			return "attacker_sink"
+		}
+	}
+	
+	// Default to public internet
+	return "public_internet"
 }
 
 // Redact sensitive headers

@@ -53,17 +53,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         // Skip email verification in demo mode
         const skipEmailVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true';
-        if (!skipEmailVerification && !user.email_verified) {
+        if (!skipEmailVerification && !user.emailVerified) {
           throw new Error('Please verify your email before logging in');
         }
 
-        if (!user.password_hash) {
+        if (!user.passwordHash) {
           throw new Error('Invalid login method');
         }
 
         const isValidPassword = await bcrypt.compare(
           credentials.password as string,
-          user.password_hash
+          user.passwordHash
         );
 
         if (!isValidPassword) {

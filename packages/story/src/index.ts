@@ -1,2 +1,2 @@
-// Placeholder for story step builder logic
-export const storyBuilder = {};
+// Export story builder
+export * from "./story-builder";

@@ -50,39 +50,40 @@ export async function checkIngestRateLimit(
     // Count current entries in window
     multi.zcard(key);
 
-    // Add new event(s) with current timestamp
-    for (let i = 0; i < eventCount; i++) {
-      multi.zadd(key, now + i, `${now}-${i}`);
-    }
-
-    // Set expiry on the key
-    multi.expire(key, windowSeconds * 2);
-
     const results = await multi.exec();
 
     if (!results) {
       throw new Error("Redis multi exec failed");
     }
 
-    // Get count before adding new events
+    // Get current count BEFORE adding new events
     const currentCount = (results[1][1] as number) || 0;
     const newTotal = currentCount + eventCount;
+
+    // Check if this would exceed the limit
+    if (newTotal > limit) {
+      const remaining = Math.max(0, limit - currentCount);
+      const resetAt = new Date(now + (windowSeconds * 1000));
+      
+      return {
+        allowed: false,
+        remaining,
+        resetAt,
+        limit,
+      };
+    }
+
+    // If allowed, add new event(s) with current timestamp
+    const addMulti = redis.multi();
+    for (let i = 0; i < eventCount; i++) {
+      addMulti.zadd(key, now + i, `${now}-${i}`);
+    }
+    addMulti.expire(key, windowSeconds * 2);
+    await addMulti.exec();
 
     // Calculate remaining and reset time
     const remaining = Math.max(0, limit - newTotal);
     const resetAt = new Date(now + (windowSeconds * 1000));
-
-    // If over limit, remove the events we just added
-    if (newTotal > limit) {
-      await redis.zremrangebyscore(key, now, now + eventCount);
-      
-      return {
-        allowed: false,
-        limit,
-        remaining: Math.max(0, limit - currentCount),
-        resetAt,
-      };
-    }
 
     return {
       allowed: true,

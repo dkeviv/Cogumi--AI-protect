@@ -4,13 +4,13 @@ services:
   # Postgres database
   postgres:
     image: postgres:16
-    container_name: cogumi-postgres
+    container_name: cogumi-ai-protect-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: cogumi_ai_protect
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,9 +22,9 @@ services:
   # Redis for queues and caching
   redis:
     image: redis:7-alpine
-    container_name: cogumi-redis
+    container_name: cogumi-ai-protect-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

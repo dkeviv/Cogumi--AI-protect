@@ -47,6 +47,7 @@ export async function GET(
         // Track last seen timestamps
         let lastStoryCheck = new Date();
         let lastEventCheck = new Date();
+        let lastSeenStatus = run.status; // Track status to detect changes
 
         // Poll for new data every 1 second
         intervalId = setInterval(async () => {
@@ -97,7 +98,9 @@ export async function GET(
               where: { id: runId },
             });
 
-            if (currentRun && currentRun.status !== run.status) {
+            if (currentRun && currentRun.status !== lastSeenStatus) {
+              lastSeenStatus = currentRun.status; // Update last seen status
+              
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({

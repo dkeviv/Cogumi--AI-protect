@@ -9,13 +9,16 @@
 
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 import { callLLM } from './llm';
 import { executeToolCall } from './tools';
+import { checkRateLimit, getRateLimitHeaders } from './rate-limit';
 
-dotenv.config();
+// Load .env from root directory
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
-const PORT = parseInt(process.env.PORT || '3001', 10);
+const PORT = parseInt(process.env.DEMO_AGENT_PORT || process.env.PORT || '3002', 10);
 const HOST = process.env.HOST || '0.0.0.0';
 
 app.use(express.json());
@@ -44,6 +47,34 @@ app.get('/health', (req: Request, res: Response) => {
 // Agent conversation endpoint
 app.post('/chat', async (req: Request, res: Response) => {
   try {
+    // Rate limiting
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    
+    // Check minute limit
+    const minuteLimit = checkRateLimit(clientIp, 'minute');
+    if (!minuteLimit.allowed) {
+      res.set(getRateLimitHeaders(minuteLimit));
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        message: `Too many requests. Please try again in ${minuteLimit.retryAfter} seconds.`,
+        retryAfter: minuteLimit.retryAfter,
+      });
+    }
+
+    // Check hour limit
+    const hourLimit = checkRateLimit(clientIp, 'hour');
+    if (!hourLimit.allowed) {
+      res.set(getRateLimitHeaders(hourLimit));
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        message: `Hourly limit reached. Please try again later.`,
+        retryAfter: hourLimit.retryAfter,
+      });
+    }
+
+    // Set rate limit headers
+    res.set(getRateLimitHeaders(minuteLimit));
+
     const { message, conversationHistory = [] } = req.body;
 
     if (!message) {

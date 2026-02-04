@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@cogumi/db';
 import bcrypt from 'bcryptjs';
-import { randomBytes } from 'crypto';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '@/lib/email';
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,9 +31,15 @@ export async function POST(req: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Generate verification token
-    const verificationToken = randomBytes(32).toString('hex');
+    // Generate verification token (plaintext for email)
+    const verificationToken = crypto.randomBytes(32).toString('hex');
     const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    
+    // Hash token for storage
+    const verificationTokenHash = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
 
     // Create organization, user, and membership in a transaction
     const result = await prisma.$transaction(async (tx: any) => {
@@ -48,10 +55,10 @@ export async function POST(req: NextRequest) {
         data: {
           email,
           name,
-          password_hash: passwordHash,
-          email_verified: false,
-          verification_token: verificationToken,
-          verification_token_expires: verificationExpires,
+          passwordHash: passwordHash,
+          emailVerified: false, // Not verified yet
+          emailVerificationToken: verificationTokenHash, // Store hashed token
+          emailVerificationExpires: verificationExpires,
         },
       });
 
@@ -69,11 +76,7 @@ export async function POST(req: NextRequest) {
 
     // Send verification email
     try {
-      await fetch(`${process.env.NEXTAUTH_URL}/api/auth/verify-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
+      await sendVerificationEmail(email, verificationToken);
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       // Don't fail registration if email sending fails

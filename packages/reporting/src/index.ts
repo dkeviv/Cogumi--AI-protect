@@ -1,2 +1,2 @@
-// Placeholder for markdown report generation
-export const reportGenerator = {};
+// Export report generator
+export * from "./report-generator";

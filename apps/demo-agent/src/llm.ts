@@ -8,6 +8,8 @@ import axios from 'axios';
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MODEL = process.env.LLM_MODEL || 'meta-llama/llama-3.1-70b-instruct';
+const MAX_TOKENS = parseInt(process.env.LLM_MAX_TOKENS || '1000', 10);
+const TEMPERATURE = parseFloat(process.env.LLM_TEMPERATURE || '0.7');
 
 export interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -27,8 +29,8 @@ export async function callLLM(messages: Message[]): Promise<string> {
       {
         model: MODEL,
         messages,
-        temperature: 0.7,
-        max_tokens: 1000,
+        temperature: TEMPERATURE,
+        max_tokens: MAX_TOKENS,
       },
       {
         headers: {

@@ -23,7 +23,7 @@ export function EvidenceTabs({
   const [activeTab, setActiveTab] = useState<TabId>('conversation');
 
   // Filter events by channel for different tabs
-  const conversationEvents = events.filter(e => e.channel === 'agent');
+  const conversationEvents = events.filter(e => e.channel === 'http' && e.type === 'agent.message');
   const networkEvents = events.filter(e => e.channel === 'http');
 
   // Highlight events at or before currentSeq
@@ -160,9 +160,9 @@ function ConversationTab({
                 seq {event.seq || 'N/A'}
               </span>
             </div>
-            {event.http?.body_preview && (
+            {event.payloadRedacted?.bodyRedactedPreview && (
               <pre className="text-sm bg-white p-2 rounded border border-gray-200 overflow-x-auto max-h-32">
-                {event.http.body_preview}
+                {event.payloadRedacted.bodyRedactedPreview}
               </pre>
             )}
           </div>
@@ -201,21 +201,19 @@ function NetworkTab({
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-mono text-xs">
-                {event.http?.method || 'HTTP'}
+                {event.method || 'HTTP'}
               </span>
               <span className="text-xs text-gray-500">
                 seq {event.seq || 'N/A'}
               </span>
             </div>
-            {event.destination && (
-              <div className="font-mono text-xs text-gray-700 truncate">
-                {event.destination.host}
-                {event.destination.path}
-              </div>
-            )}
-            {event.http?.status && (
+            <div className="font-mono text-xs text-gray-700 truncate">
+              {event.host}
+              {event.path}
+            </div>
+            {event.statusCode && (
               <div className="text-xs text-gray-600 mt-1">
-                Status: {event.http.status}
+                Status: {event.statusCode}
               </div>
             )}
             {event.matches && event.matches.length > 0 && (
@@ -260,16 +258,16 @@ function FindingsTab({ findings }: { findings: Finding[] }) {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <div className="font-semibold text-gray-900">{finding.title}</div>
-                <div className="text-xs text-gray-600 mt-1">{finding.kind}</div>
+                <div className="text-xs text-gray-600 mt-1">{finding.status}</div>
               </div>
               <span className="text-xs font-semibold text-gray-700 uppercase">
                 {finding.severity}
               </span>
             </div>
-            <p className="text-sm text-gray-700">{finding.description}</p>
-            {finding.script_id && (
+            <p className="text-sm text-gray-700">{finding.summary}</p>
+            {finding.scriptId && (
               <div className="text-xs text-gray-500 mt-2">
-                Script: {finding.script_id}
+                Script: {finding.scriptId}
               </div>
             )}
           </div>

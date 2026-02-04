@@ -129,7 +129,7 @@ export async function archiveReport(runId: string): Promise<boolean> {
   // TODO: In production, export to S3 or external storage
   // For now, just log that we would archive it
   console.log(`[ARCHIVE] Report for run ${runId} would be archived here`);
-  console.log(`[ARCHIVE] Report size: ${report.markdown.length} bytes`);
+  console.log(`[ARCHIVE] Report size: ${report.contentMd.length} bytes`);
 
   return true;
 }

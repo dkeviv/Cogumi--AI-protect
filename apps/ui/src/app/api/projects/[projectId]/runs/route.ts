@@ -94,7 +94,7 @@ export async function POST(
       run: {
         id: run.id,
         status: run.status,
-        created_at: run.createdAt,
+        createdAt: run.createdAt,
       },
     });
   } catch (error) {

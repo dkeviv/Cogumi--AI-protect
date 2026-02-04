@@ -64,10 +64,10 @@ export type Destination = z.infer<typeof DestinationSchema>;
 
 export const HttpSchema = z.object({
   method: z.string().nullable().optional(),
-  status_code: z.number().nullable().optional(),
-  bytes_out: z.number().optional(),
-  bytes_in: z.number().optional(),
-  duration_ms: z.number().optional(),
+  statusCode: z.number().nullable().optional(),
+  bytesOut: z.number().optional(),
+  bytesIn: z.number().optional(),
+  durationMs: z.number().optional(),
 });
 export type Http = z.infer<typeof HttpSchema>;
 
@@ -81,118 +81,125 @@ export type SecretMatch = z.infer<typeof SecretMatchSchema>;
 
 export const PayloadRedactedSchema = z.object({
   summary: z.string().optional(),
-  headers_redacted: z.record(z.string()).optional(),
-  body_redacted_preview: z.string().nullable().optional(),
+  headersRedacted: z.record(z.string()).optional(),
+  bodyRedactedPreview: z.string().nullable().optional(),
 });
 export type PayloadRedacted = z.infer<typeof PayloadRedactedSchema>;
 
 export const EventSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  project_id: z.string().uuid(),
-  run_id: z.string().uuid().nullable().optional(),
+  orgId: z.string().uuid(),
+  projectId: z.string().uuid(),
+  runId: z.string().uuid().nullable().optional(),
   ts: z.string().datetime(), // ISO-8601
   seq: z.number().int().optional(),
   channel: ChannelSchema,
   type: EventTypeSchema,
   actor: ActorSchema,
-  destination: DestinationSchema,
-  http: HttpSchema.optional(),
-  payload_redacted: PayloadRedactedSchema.optional(),
-  matches: z.array(SecretMatchSchema).optional(),
-  integrity_hash: z.string().optional(),
+  host: z.string(),
+  path: z.string().nullable().optional(),
+  port: z.number().optional(),
+  classification: DestinationClassSchema.nullable().optional(),
+  method: z.string().nullable().optional(),
+  statusCode: z.number().nullable().optional(),
+  bytesOut: z.number().optional(),
+  bytesIn: z.number().optional(),
+  durationMs: z.number().optional(),
+  payloadRedacted: z.any().optional(), // Json field
+  matches: z.any().optional(), // Json field
+  integrityHash: z.string().optional(),
 });
 export type Event = z.infer<typeof EventSchema>;
 
 export const StoryStepSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  run_id: z.string().uuid(),
+  orgId: z.string().uuid(),
+  runId: z.string().uuid(),
   ts: z.string().datetime(), // ISO-8601
-  seq_start: z.number().int().optional(),
-  seq_end: z.number().int().optional(),
-  script_id: z.string().nullable().optional(), // S1, S2, S3, S4, S5, or null
-  step_kind: StepKindSchema,
+  seqStart: z.number().int().optional(),
+  seqEnd: z.number().int().optional(),
+  scriptId: z.string().nullable().optional(), // S1, S2, S3, S4, S5, or null
+  stepKind: StepKindSchema,
   severity: SeveritySchema,
   status: z.string().default('open'),
-  claim_title: z.string(),
-  claim_summary: z.string(),
-  attack_style: z.string().nullable().optional(),
-  evidence_event_ids: z.array(z.string().uuid()),
+  claimTitle: z.string(),
+  claimSummary: z.string(),
+  attackStyle: z.string().nullable().optional(),
+  evidenceEventIds: z.array(z.string().uuid()),
 });
 export type StoryStep = z.infer<typeof StoryStepSchema>;
 
 export const NarrativeStepSchema = z.object({
   label: z.string(),
-  event_id: z.string().uuid(),
+  eventId: z.string().uuid(),
 });
 export type NarrativeStep = z.infer<typeof NarrativeStepSchema>;
 
 export const FindingSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  run_id: z.string().uuid(),
-  script_id: z.string(), // S1 through S5
+  orgId: z.string().uuid(),
+  runId: z.string().uuid(),
+  scriptId: z.string(), // S1 through S5
   title: z.string(),
   severity: SeveritySchema,
   status: FindingStatusSchema,
   score: z.number().int().min(0).max(100),
   confidence: z.number().min(0).max(1),
   summary: z.string(),
-  evidence_event_ids: z.array(z.string().uuid()),
-  narrative_steps: z.array(NarrativeStepSchema).optional(),
-  remediation_md: z.string().optional(),
+  evidenceEventIds: z.array(z.string().uuid()),
+  narrativeSteps: z.array(NarrativeStepSchema).optional(),
+  remediationMd: z.string().optional(),
 });
 export type Finding = z.infer<typeof FindingSchema>;
 
 export const PromptVariantSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  project_id: z.string().uuid(),
-  script_id: z.string(), // S1-S5
-  script_step_id: z.string(),
-  style_id: z.string(),
+  orgId: z.string().uuid(),
+  projectId: z.string().uuid(),
+  scriptId: z.string(), // S1-S5
+  scriptStepId: z.string(),
+  styleId: z.string(),
   version: z.string().default('v1'),
-  prompt_text: z.string(),
+  promptText: z.string(),
   source: z.enum(['builtin', 'generated', 'customer']).default('builtin'),
-  created_at: z.string().datetime(),
-  last_used_at: z.string().datetime().nullable().optional(),
+  createdAt: z.string().datetime(),
+  lastUsedAt: z.string().datetime().nullable().optional(),
 });
 export type PromptVariant = z.infer<typeof PromptVariantSchema>;
 
 export const RunSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  project_id: z.string().uuid(),
+  orgId: z.string().uuid(),
+  projectId: z.string().uuid(),
   status: RunStatusSchema,
-  risk_score: z.number().int().min(0).max(100).nullable().optional(),
-  started_at: z.string().datetime().nullable().optional(),
-  ended_at: z.string().datetime().nullable().optional(),
-  created_at: z.string().datetime(),
-  created_by: z.string().uuid().nullable().optional(),
+  riskScore: z.number().int().min(0).max(100).nullable().optional(),
+  startedAt: z.string().datetime().nullable().optional(),
+  endedAt: z.string().datetime().nullable().optional(),
+  createdAt: z.string().datetime(),
+  createdBy: z.string().uuid().nullable().optional(),
 });
 export type Run = z.infer<typeof RunSchema>;
 
 export const ProjectSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
+  orgId: z.string().uuid(),
   name: z.string(),
   environment: ProjectEnvSchema,
-  prod_override_enabled: z.boolean().default(false),
-  agent_test_url: z.string().url().nullable().optional(),
-  tool_domains: z.array(z.string()).default([]),
-  internal_suffixes: z.array(z.string()).default([]),
-  retention_days: z.number().int().default(7),
-  created_at: z.string().datetime(),
-  updated_at: z.string().datetime(),
+  prodOverrideEnabled: z.boolean().default(false),
+  agentTestUrl: z.string().url().nullable().optional(),
+  toolDomains: z.array(z.string()).default([]),
+  internalSuffixes: z.array(z.string()).default([]),
+  retentionDays: z.number().int().default(7),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 export type Project = z.infer<typeof ProjectSchema>;
 
 export const ScriptResultSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  run_id: z.string().uuid(),
-  script_id: z.string(), // S1-S5
+  orgId: z.string().uuid(),
+  runId: z.string().uuid(),
+  scriptId: z.string(), // S1-S5
   score: z.number().int().min(0).max(100),
   severity: SeveritySchema,
   confidence: z.number().min(0).max(1),
@@ -203,11 +210,11 @@ export type ScriptResult = z.infer<typeof ScriptResultSchema>;
 
 export const ReportSchema = z.object({
   id: z.string().uuid(),
-  org_id: z.string().uuid(),
-  run_id: z.string().uuid(),
+  orgId: z.string().uuid(),
+  runId: z.string().uuid(),
   format: z.string().default('markdown'),
-  content_md: z.string(),
-  generated_at: z.string().datetime(),
+  contentMd: z.string(),
+  generatedAt: z.string().datetime(),
 });
 export type Report = z.infer<typeof ReportSchema>;
 
@@ -215,34 +222,34 @@ export type Report = z.infer<typeof ReportSchema>;
 export const CreateProjectRequestSchema = z.object({
   name: z.string().min(1).max(100),
   environment: ProjectEnvSchema.default('sandbox'),
-  tool_domains: z.array(z.string()).optional(),
-  internal_suffixes: z.array(z.string()).optional(),
+  toolDomains: z.array(z.string()).optional(),
+  internalSuffixes: z.array(z.string()).optional(),
 });
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
 
 export const UpdateProjectRequestSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   environment: ProjectEnvSchema.optional(),
-  prod_override_enabled: z.boolean().optional(),
-  agent_test_url: z.string().url().nullable().optional(),
-  tool_domains: z.array(z.string()).optional(),
-  internal_suffixes: z.array(z.string()).optional(),
+  prodOverrideEnabled: z.boolean().optional(),
+  agentTestUrl: z.string().url().nullable().optional(),
+  toolDomains: z.array(z.string()).optional(),
+  internalSuffixes: z.array(z.string()).optional(),
   redteam: z
     .object({
-      enabled_style_ids: z.array(z.string()),
+      enabledStyleIds: z.array(z.string()),
       intensity: z.enum(['low', 'med', 'high']),
-      version_pin: z.string().optional(),
+      versionPin: z.string().optional(),
     })
     .optional(),
 });
 export type UpdateProjectRequest = z.infer<typeof UpdateProjectRequestSchema>;
 
 export const IngestEventsRequestSchema = z.object({
-  project_id: z.string().uuid(),
-  run_id: z.string().uuid().nullable().optional(),
-  sidecar_version: z.string(),
+  projectId: z.string().uuid(),
+  runId: z.string().uuid().nullable().optional(),
+  sidecarVersion: z.string(),
   events: z.array(
-    EventSchema.omit({ id: true, org_id: true }).extend({
+    EventSchema.omit({ id: true, orgId: true }).extend({
       ts: z.string().datetime(),
     })
   ),
@@ -262,14 +269,14 @@ export const CreateRunRequestSchema = z.object({
 export type CreateRunRequest = z.infer<typeof CreateRunRequestSchema>;
 
 export const ValidateAgentEndpointRequestSchema = z.object({
-  agent_test_url: z.string().url(),
+  agentTestUrl: z.string().url(),
 });
 export type ValidateAgentEndpointRequest = z.infer<typeof ValidateAgentEndpointRequestSchema>;
 
 export const ValidateAgentEndpointResponseSchema = z.object({
   ok: z.boolean(),
   details: z.object({
-    latency_ms: z.number(),
+    latencyMs: z.number(),
   }),
 });
 export type ValidateAgentEndpointResponse = z.infer<
@@ -277,24 +284,24 @@ export type ValidateAgentEndpointResponse = z.infer<
 >;
 
 export const HeartbeatRequestSchema = z.object({
-  project_id: z.string().uuid(),
-  sidecar_version: z.string(),
+  projectId: z.string().uuid(),
+  sidecarVersion: z.string(),
   counters: z.object({
-    events_sent_1m: z.number().int(),
-    events_dropped_1m: z.number().int(),
+    eventsSent1m: z.number().int(),
+    eventsDropped1m: z.number().int(),
   }),
 });
 export type HeartbeatRequest = z.infer<typeof HeartbeatRequestSchema>;
 
 export const AgentMessageRequestSchema = z.object({
-  run_id: z.string().uuid(),
-  session_id: z.string().uuid(),
+  runId: z.string().uuid(),
+  sessionId: z.string().uuid(),
   actor: ActorSchema,
   message: z.string(),
   metadata: z.object({
-    script_id: z.string().optional(),
+    scriptId: z.string().optional(),
     step: z.number().optional(),
-    attack_style: z.string().optional(),
+    attackStyle: z.string().optional(),
   }),
 });
 export type AgentMessageRequest = z.infer<typeof AgentMessageRequestSchema>;

@@ -103,7 +103,7 @@ export function RunHeader({ run }: RunHeaderProps) {
               Run {run.id.split('-').pop()}
             </h1>
             <div className="text-sm text-gray-500 mt-1">
-              {run.started_at ? new Date(run.started_at).toLocaleString() : '--'}
+              {run.startedAt ? new Date(run.startedAt).toLocaleString() : '--'}
             </div>
           </div>
 
@@ -126,9 +126,9 @@ export function RunHeader({ run }: RunHeaderProps) {
           <div className="text-right">
             <div className="text-xs text-gray-500 font-medium">RISK SCORE</div>
             <div
-              className={`text-3xl font-bold ${getRiskScoreColor(run.risk_score ?? null)}`}
+              className={`text-3xl font-bold ${getRiskScoreColor(run.riskScore ?? null)}`}
             >
-              {run.risk_score ?? '--'}
+              {run.riskScore ?? '--'}
             </div>
           </div>
 
@@ -136,7 +136,7 @@ export function RunHeader({ run }: RunHeaderProps) {
           <div className="text-right">
             <div className="text-xs text-gray-500 font-medium">DURATION</div>
             <div className="text-lg font-semibold text-gray-900">
-              {formatDuration(run.started_at ?? null, run.ended_at ?? null)}
+              {formatDuration(run.startedAt ?? null, run.endedAt ?? null)}
             </div>
           </div>
 

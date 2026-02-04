@@ -10,17 +10,20 @@ interface ProofDrawerProps {
   evidenceEvents: Event[];
 }
 
-const EVENT_TYPE_ICONS = {
+const EVENT_TYPE_ICONS: Record<string, string> = {
   request: '→',
   response: '←',
-  violation: '⚠',
-  ingest_throttled: '🚦',
+  blocked: '⛔',
+  marker: '🔖',
+  'secret.detected': '🔑',
+  'policy.violation': '⚠',
+  'agent.message': '�',
 };
 
-const CHANNEL_COLORS = {
+const CHANNEL_COLORS: Record<string, string> = {
   http: 'bg-blue-100 text-blue-800',
-  agent: 'bg-purple-100 text-purple-800',
   system: 'bg-gray-100 text-gray-800',
+  policy: 'bg-red-100 text-red-800',
 };
 
 /**
@@ -119,74 +122,66 @@ export function ProofDrawer({
                 {isExpanded && (
                   <div className="px-4 pb-4 space-y-3 bg-white">
                     {/* Destination */}
-                    {event.destination && (
+                    {event.host && (
                       <div>
                         <div className="text-xs font-semibold text-gray-700 mb-1">
                           DESTINATION
                         </div>
                         <div className="text-sm font-mono bg-gray-50 p-2 rounded">
-                          {event.destination.host}
-                          {event.destination.path && (
+                          {event.host}
+                          {event.path && (
                             <span className="text-gray-600">
-                              {event.destination.path}
+                              {event.path}
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          Classification: {event.destination.classification}
-                        </div>
+                        {event.classification && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Classification: {event.classification}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* HTTP details */}
-                    {event.http && (
+                    {event.method && (
                       <div>
                         <div className="text-xs font-semibold text-gray-700 mb-1">
                           HTTP
                         </div>
                         <div className="text-sm space-y-1">
-                          {event.http.method && event.http.url && (
-                            <div className="font-mono bg-gray-50 p-2 rounded">
-                              {event.http.method} {event.http.url}
-                            </div>
-                          )}
-                          {event.http.status && (
+                          <div className="font-mono bg-gray-50 p-2 rounded">
+                            {event.method} {event.host}{event.path || '/'}
+                            {event.port && `:${event.port}`}
+                          </div>
+                          {event.statusCode && (
                             <div className="text-gray-600">
-                              Status: {event.http.status}
+                              Status: {event.statusCode}
                             </div>
                           )}
-                          {event.http.headers && (
-                            <details className="text-xs">
-                              <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                                Headers ({Object.keys(event.http.headers).length})
-                              </summary>
-                              <pre className="bg-gray-50 p-2 rounded mt-1 overflow-x-auto">
-                                {JSON.stringify(event.http.headers, null, 2)}
-                              </pre>
-                            </details>
+                          {event.durationMs && (
+                            <div className="text-gray-600">
+                              Duration: {event.durationMs}ms
+                            </div>
                           )}
-                          {event.http.body_preview && (
-                            <details className="text-xs">
-                              <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
-                                Body Preview
-                              </summary>
-                              <pre className="bg-gray-50 p-2 rounded mt-1 overflow-x-auto max-h-32">
-                                {event.http.body_preview}
-                              </pre>
-                            </details>
+                          {(event.bytesOut || event.bytesIn) && (
+                            <div className="text-gray-600 text-xs">
+                              {event.bytesOut && `Out: ${event.bytesOut}b `}
+                              {event.bytesIn && `In: ${event.bytesIn}b`}
+                            </div>
                           )}
                         </div>
                       </div>
                     )}
 
                     {/* Matches (secret detections) */}
-                    {event.matches && event.matches.length > 0 && (
+                    {event.matches && Array.isArray(event.matches) && event.matches.length > 0 && (
                       <div>
                         <div className="text-xs font-semibold text-gray-700 mb-1">
                           SECRET MATCHES
                         </div>
                         <div className="space-y-2">
-                          {event.matches.map((match, matchIdx) => (
+                          {event.matches.map((match: any, matchIdx: number) => (
                             <div
                               key={matchIdx}
                               className="bg-red-50 border border-red-200 p-2 rounded text-sm"
@@ -209,16 +204,16 @@ export function ProofDrawer({
                     )}
 
                     {/* Payload redacted info */}
-                    {event.payload_redacted && (
+                    {event.payloadRedacted && (
                       <div className="text-xs text-gray-500 italic">
                         ⚠ Payload redacted for security
                       </div>
                     )}
 
                     {/* Integrity hash */}
-                    {event.integrity_hash && (
+                    {event.integrityHash && (
                       <div className="text-xs text-gray-400 font-mono">
-                        Hash: {event.integrity_hash.substring(0, 16)}...
+                        Hash: {event.integrityHash.substring(0, 16)}...
                       </div>
                     )}
                   </div>

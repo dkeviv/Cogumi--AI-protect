@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    if (user.email_verified) {
+    if (user.emailVerified) {
       return NextResponse.json({ error: 'Email already verified' }, { status: 400 });
     }
 
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        verification_token: token,
-        verification_token_expires: expires,
+        emailVerificationToken: token,
+        emailVerificationExpires: expires,
       },
     });
 
@@ -85,8 +85,8 @@ export async function GET(req: NextRequest) {
   try {
     const user = await prisma.user.findFirst({
       where: {
-        verification_token: token,
-        verification_token_expires: {
+        emailVerificationToken: token,
+        emailVerificationExpires: {
           gte: new Date(),
         },
       },
@@ -102,9 +102,9 @@ export async function GET(req: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        email_verified: true,
-        verification_token: null,
-        verification_token_expires: null,
+        emailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpires: null,
       },
     });
 

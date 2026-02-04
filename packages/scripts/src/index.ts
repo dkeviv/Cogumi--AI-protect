@@ -1,2 +1,5 @@
-// Placeholder for script execution logic (S1-S5)
-export const scripts = {};
+// Export registry
+export * from "./registry";
+
+// Export executor
+export * from "./executor";

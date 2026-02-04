@@ -59,9 +59,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Parse and validate request body
+    const body = await req.json();
+    const validation = EventBatchSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: "Invalid event batch", details: validation.error.errors },
+        { status: 400 }
+      );
+    }
+
+    const { events } = validation.data;
+    
+    if (events.length === 0) {
+      return NextResponse.json(
+        { error: "Empty event batch" },
+        { status: 400 }
+      );
+    }
+
+    // Extract projectId from first event to narrow token lookup
+    const firstEventProjectId = events[0].project_id;
+
     // Find active token by comparing hash
-    const allTokens = await db.sidecarToken.findMany({
-      where: { status: "active" },
+    // OPTIMIZATION: Filter by projectId to reduce bcrypt comparisons from O(all_tokens) to O(tokens_per_project)
+    // Most projects have 1-2 active tokens, making this significantly faster than checking all org tokens.
+    const projectTokens = await db.sidecarToken.findMany({
+      where: { 
+        status: "active",
+        projectId: firstEventProjectId,
+      },
       select: {
         id: true,
         orgId: true,
@@ -71,7 +99,7 @@ export async function POST(req: NextRequest) {
     });
 
     let matchedToken = null;
-    for (const t of allTokens) {
+    for (const t of projectTokens) {
       const isMatch = await bcrypt.compare(token, t.tokenHash);
       if (isMatch) {
         matchedToken = t;
@@ -85,19 +113,6 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-
-    // Parse and validate request body
-    const body = await req.json();
-    const validation = EventBatchSchema.safeParse(body);
-
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: "Invalid event batch", details: validation.error.errors },
-        { status: 400 }
-      );
-    }
-
-    const { events } = validation.data;
 
     // Check rate limit (events per minute)
     const rateLimit = await checkIngestRateLimit(matchedToken.id, events.length);
