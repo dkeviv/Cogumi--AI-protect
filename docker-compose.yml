@@ -40,14 +40,14 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cogumi_ai_protect?schema=public
       REDIS_URL: redis://redis:6379
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      NEXTAUTH_URL: http://localhost:${WEB_PORT:-3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-demo-secret-key-change-in-production-min-32-chars}
       MAX_RUN_DURATION_MINUTES: 30
       MAX_EVENTS_PER_MINUTE: 300
+      # Demo mode - skip email verification for local testing
+      SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-true}
     ports:
-      - "3000:3000"
+      - "${WEB_PORT:-3000}:3000"
     depends_on:
       postgres:
         condition: service_healthy

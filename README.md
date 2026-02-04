@@ -64,6 +64,14 @@
 
 **NEW:** We now include a demo AI agent for instant end-to-end testing!
 
+**Super Quick:**
+```bash
+./setup-demo.sh
+# Follow the prompts - that's it!
+```
+
+**Manual Setup:**
+
 ### Prerequisites
 
 - Docker + Docker Compose
@@ -76,42 +84,48 @@
 cp .env.example .env
 nano .env
 
-# Add required values:
-# - NEXTAUTH_SECRET (generate with: openssl rand -hex 32)
-# - OPENROUTER_API_KEY (for demo agent)
+# Required: Add OPENROUTER_API_KEY
+# Optional: Change WEB_PORT if 3000 is taken
 ```
 
-### 2. Start Everything
+### 2. Start & Initialize
 
 ```bash
-# Start platform + demo agent
+# Start all services
 docker-compose up -d
 
-# Watch logs
-docker-compose logs -f
+# Run migrations
+docker-compose exec web npx prisma migrate deploy
+
+# Seed demo data (creates demo user + project)
+docker-compose exec web npm run db:seed
+# Save the sidecar token from output!
 ```
 
-This starts:
-- ✅ Web UI (http://localhost:3000)
-- ✅ Worker (background)
-- ✅ Postgres + Redis
-- ✅ **Demo Agent** (http://localhost:3001) - Intentionally vulnerable AI agent
+### 3. Start Sidecar & Run Tests
 
-### 3. Run Your First Test
+```bash
+# Start sidecar proxy (in new terminal)
+cd apps/sidecar
+./start-demo.sh YOUR_SIDECAR_TOKEN
 
-1. Open http://localhost:3000
-2. Create account
-3. Create project with Agent Test URL: `http://demo-agent:3001/chat`
-4. Generate sidecar token
-5. Run sidecar locally:
-   ```bash
-   cd apps/sidecar
-   go run cmd/sidecar/main.go --token YOUR_TOKEN --api-url http://localhost:3000 --port 8080
-   ```
-6. Click "Run Tests" in UI
-7. Watch live exploit feed! 🎉
+# In browser:
+# 1. Open http://localhost:3000
+# 2. Login: demo@cogumi.ai / demo123
+# 3. Open "Demo Agent Security Test" project
+# 4. Click "Run Tests"
+# 5. Watch live exploit detection! 🎉
+```
 
-**See full demo guide:** [DEMO.md](./DEMO.md)
+**📖 Detailed guide:** [QUICKSTART.md](./QUICKSTART.md)
+
+**Your questions answered:**
+1. ✅ Email/password auth (no Google OAuth needed)
+2. ✅ Email verification disabled for demo
+3. ✅ Configurable port (if 3000 is taken)
+4. ✅ One-click demo after login
+5. ✅ Sidecar explained in detail
+6. ✅ Real-world agent URL guidance
 
 ---
 

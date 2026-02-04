@@ -51,7 +51,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           throw new Error('Invalid email or password');
         }
 
-        if (!user.email_verified) {
+        // Skip email verification in demo mode
+        const skipEmailVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true';
+        if (!skipEmailVerification && !user.email_verified) {
           throw new Error('Please verify your email before logging in');
         }
 

@@ -1,33 +1,34 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 Seeding database with demo data...');
 
-  // Create test organization
+  // Create demo organization
   const org = await prisma.organization.upsert({
-    where: { id: 'test-org-id' },
+    where: { id: 'demo-org-1' },
     update: {},
     create: {
-      id: 'test-org-id',
-      name: 'Test Organization',
+      id: 'demo-org-1',
+      name: 'Demo Organization',
     },
   });
   console.log('✅ Created organization:', org.name);
 
-  // Create test user with hashed password
-  const passwordHash = await bcrypt.hash('password123', 10);
+  // Create demo user with hashed password
+  const passwordHash = await bcrypt.hash('demo123', 10);
   const user = await prisma.user.upsert({
-    where: { email: 'admin@test.com' },
+    where: { email: 'demo@cogumi.ai' },
     update: {},
     create: {
-      id: 'test-user-id',
-      email: 'admin@test.com',
-      name: 'Test Admin',
+      id: 'demo-user-1',
+      email: 'demo@cogumi.ai',
+      name: 'Demo User',
       password_hash: passwordHash,
-      email_verified: true, // Pre-verified for testing
+      email_verified: true, // Pre-verified for demo
     },
   });
   console.log('✅ Created user:', user.email);
@@ -49,10 +50,55 @@ async function main() {
   });
   console.log('✅ Created membership with role:', membership.role);
 
-  console.log('\n🎉 Seed complete!');
-  console.log('\nTest credentials:');
-  console.log('  Email: admin@test.com');
-  console.log('  Password: password123');
+  // Create demo project pre-configured for demo-agent
+  const project = await prisma.project.upsert({
+    where: { id: 'demo-project-1' },
+    update: {},
+    create: {
+      id: 'demo-project-1',
+      orgId: org.id,
+      name: 'Demo Agent Security Test',
+      environment: 'sandbox',
+      agentTestUrl: 'http://demo-agent:3001/chat',
+      prodOverrideEnabled: false,
+      retentionDays: 30,
+      toolDomains: ['api.openrouter.ai', 'openrouter.ai'],
+      internalSuffixes: ['cogumi.ai', 'localhost'],
+    },
+  });
+  console.log('✅ Created project:', project.name);
+
+  // Create sidecar token for demo
+  const tokenValue = `demo_${crypto.randomBytes(32).toString('hex')}`;
+  const tokenHash = crypto.createHash('sha256').update(tokenValue).digest('hex');
+
+  await prisma.sidecarToken.upsert({
+    where: { id: 'demo-token-1' },
+    update: {},
+    create: {
+      id: 'demo-token-1',
+      orgId: org.id,
+      projectId: project.id,
+      tokenHash: tokenHash,
+      status: 'active',
+    },
+  });
+
+  console.log('\n' + '='.repeat(70));
+  console.log('🎉 Demo database seeded successfully!');
+  console.log('='.repeat(70));
+  console.log('\n📧 LOGIN CREDENTIALS:');
+  console.log('   Email:    demo@cogumi.ai');
+  console.log('   Password: demo123');
+  console.log('\n🔑 SIDECAR TOKEN (copy this):');
+  console.log(`   ${tokenValue}`);
+  console.log('\n🚀 QUICK START:');
+  console.log('   1. Open http://localhost:3000 and login');
+  console.log('   2. Go to project "Demo Agent Security Test"');
+  console.log('   3. Start sidecar:');
+  console.log(`      ./apps/sidecar/start-demo.sh ${tokenValue}`);
+  console.log('   4. Click "Run Tests" in the UI');
+  console.log('\n' + '='.repeat(70));
 }
 
 main()
