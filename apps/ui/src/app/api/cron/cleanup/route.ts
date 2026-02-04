@@ -7,15 +7,24 @@ import { cleanupAll } from '@/lib/retention-cleanup';
  * Runs retention cleanup for all organizations.
  * Should be called by a cron job (e.g., daily at midnight).
  * 
- * In production, protect this endpoint with a secret token.
+ * SECURITY: Requires CRON_SECRET environment variable and matching X-Cron-Secret header.
  */
 export async function POST(req: NextRequest) {
   try {
-    // Verify cron secret (optional but recommended)
+    // Verify cron secret (REQUIRED in all environments)
     const cronSecret = req.headers.get('x-cron-secret');
     const expectedSecret = process.env.CRON_SECRET;
 
-    if (expectedSecret && cronSecret !== expectedSecret) {
+    if (!expectedSecret) {
+      console.error('[CRON] CRON_SECRET environment variable not configured');
+      return NextResponse.json(
+        { error: 'Server misconfiguration: CRON_SECRET not set' },
+        { status: 500 }
+      );
+    }
+
+    if (!cronSecret || cronSecret !== expectedSecret) {
+      console.warn('[CRON] Unauthorized cleanup attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -43,6 +52,7 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     message: 'Use POST to trigger cleanup',
-    info: 'Set X-Cron-Secret header if CRON_SECRET env var is configured',
+    info: 'REQUIRED: Set X-Cron-Secret header matching CRON_SECRET env var',
+    security: 'This endpoint requires authentication in all environments',
   });
 }

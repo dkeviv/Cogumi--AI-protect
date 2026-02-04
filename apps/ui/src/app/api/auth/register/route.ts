@@ -3,10 +3,23 @@ import { prisma } from '@cogumi/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { sendVerificationEmail } from '@/lib/email';
+import { checkAuthRateLimit, createRateLimitHeaders, resetAuthRateLimit } from '@/lib/auth-rate-limiter';
 
 export async function POST(req: NextRequest) {
   try {
     const { name, email, password, organizationName } = await req.json();
+
+    // Check rate limit (3 registrations per hour per IP)
+    const rateLimit = checkAuthRateLimit(req, 'register', email);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { 
+          status: 429,
+          headers: createRateLimitHeaders(rateLimit.remaining, rateLimit.resetAt, rateLimit.retryAfter)
+        }
+      );
+    }
 
     // Validate input
     if (!name || !email || !password || !organizationName) {
@@ -76,9 +89,18 @@ export async function POST(req: NextRequest) {
 
     // Send verification email
     try {
+      console.log(`Attempting to send verification email to: ${email}`);
       await sendVerificationEmail(email, verificationToken);
+      console.log(`✅ Verification email sent successfully to: ${email}`);
     } catch (emailError) {
-      console.error('Failed to send verification email:', emailError);
+      console.error('❌ Failed to send verification email:', emailError);
+      console.error('Email config check:', {
+        hasSmtpUser: !!process.env.SMTP_USER,
+        hasSmtpPassword: !!process.env.SMTP_PASSWORD,
+        smtpHost: process.env.SMTP_HOST,
+        smtpPort: process.env.SMTP_PORT,
+        fromEmail: process.env.SMTP_FROM_EMAIL,
+      });
       // Don't fail registration if email sending fails
     }
 

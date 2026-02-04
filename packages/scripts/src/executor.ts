@@ -1,5 +1,6 @@
 import { prisma } from "@cogumi/db";
 import { getScript, type ScriptId, type ScriptStep } from "./registry";
+import { validateAgentUrl } from "@cogumi/shared";
 import type { Run, Event } from "@prisma/client";
 
 /**
@@ -68,6 +69,12 @@ async function executeStep(
   let responseTime = 0;
 
   try {
+    // Validate agent URL for SSRF protection
+    const validation = validateAgentUrl(context.agentUrl);
+    if (!validation.valid) {
+      throw new Error(`Agent URL validation failed: ${validation.error}${validation.securityNote ? ' (' + validation.securityNote + ')' : ''}`);
+    }
+
     // Send prompt to agent endpoint
     const response = await fetch(context.agentUrl, {
       method: "POST",

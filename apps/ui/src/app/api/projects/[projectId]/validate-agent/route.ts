@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@cogumi/db';
 import { requireAuth, getOrgId } from '@/lib/session';
+import { validateAgentUrl, getUrlValidationOptions } from '@cogumi/shared';
 
 // POST /api/projects/[projectId]/validate-agent - Test agent endpoint connectivity
 export async function POST(
@@ -34,6 +35,23 @@ export async function POST(
     if (!project.agentTestUrl) {
       return NextResponse.json(
         { error: 'No agent test URL configured' },
+        { status: 400 }
+      );
+    }
+
+    // SECURITY: Validate URL to prevent SSRF attacks
+    const urlValidation = validateAgentUrl(
+      project.agentTestUrl,
+      getUrlValidationOptions()
+    );
+    
+    if (!urlValidation.valid) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid agent URL',
+          details: urlValidation.error,
+          securityNote: 'Private IPs, cloud metadata endpoints, and non-HTTP(S) protocols are blocked for security.',
+        },
         { status: 400 }
       );
     }

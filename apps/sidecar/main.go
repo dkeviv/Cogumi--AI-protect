@@ -129,7 +129,9 @@ func loadConfig() Config {
 
 	listenAddr := os.Getenv("LISTEN_ADDR")
 	if listenAddr == "" {
-		listenAddr = ":8080"
+		// SECURITY: Bind to localhost by default, not all interfaces
+		// This prevents unauthorized access from other machines on the network
+		listenAddr = "127.0.0.1:8080"
 	}
 
 	return Config{

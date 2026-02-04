@@ -10,6 +10,7 @@ import { Redis } from "ioredis";
 import { prisma as db } from "@cogumi/db";
 import { executeAllScripts } from "@cogumi/scripts";
 import { buildStoryForRun } from "@cogumi/story";
+import { validateAgentUrl } from "@cogumi/shared";
 
 // Redis connection
 const connection = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
@@ -45,6 +46,20 @@ async function executeRun(runId: string): Promise<void> {
 
     if (!run.project.agentTestUrl) {
       throw new Error(`Project ${run.projectId} has no agent test URL configured`);
+    }
+
+    // Validate agent URL for SSRF protection
+    const validation = validateAgentUrl(run.project.agentTestUrl);
+    if (!validation.valid) {
+      console.error(`Run ${runId} failed URL validation: ${validation.error}`);
+      await db.run.update({
+        where: { id: runId },
+        data: {
+          status: "failed",
+          endedAt: new Date(),
+        },
+      });
+      throw new Error(`Agent URL validation failed: ${validation.error}`);
     }
 
     // Update run status to running
