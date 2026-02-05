@@ -1,51 +1,80 @@
 version: '3.8'
 
 services:
-  # Postgres database
+  # PostgreSQL Database
   postgres:
-    image: postgres:16
+    image: postgres:15
     container_name: cogumi-ai-protect-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: cogumi_ai_protect
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-cogumi-ai-protect}
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - cogumi_ai_protect_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
       timeout: 5s
       retries: 5
 
-  # Redis for queues and caching
+  # Redis (for BullMQ queues and caching)
   redis:
     image: redis:7-alpine
     container_name: cogumi-ai-protect-redis
+    restart: unless-stopped
     ports:
-      - "6380:6379"
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - cogumi_ai_protect_redis_data:/data
+    command: redis-server --appendonly yes
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
 
-  # Web UI + API
+  # Web Application (Next.js UI + API)
   web:
     build:
       context: .
       dockerfile: apps/ui/Dockerfile
-    container_name: cogumi-web
+    container_name: cogumi-ai-protect-web
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cogumi_ai_protect?schema=public
+      # Database (connect to container)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cogumi-ai-protect}?schema=public
+      
+      # Redis
       REDIS_URL: redis://redis:6379
-      NEXTAUTH_URL: http://localhost:${WEB_PORT:-3000}
+      
+      # NextAuth
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-demo-secret-key-change-in-production-min-32-chars}
-      MAX_RUN_DURATION_MINUTES: 30
-      MAX_EVENTS_PER_MINUTE: 300
-      # Demo mode - skip email verification for local testing
+      
+      # Email (optional for local dev)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@cogumi.ai}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-COGUMI AI Protect}
       SKIP_EMAIL_VERIFICATION: ${SKIP_EMAIL_VERIFICATION:-true}
+      
+      # App Config
+      NODE_ENV: ${NODE_ENV:-development}
+      MAX_RUN_DURATION_MINUTES: ${MAX_RUN_DURATION_MINUTES:-30}
+      MAX_EVENTS_PER_MINUTE: ${MAX_EVENTS_PER_MINUTE:-300}
+      
+      # Cron Secret (for scheduled jobs)
+      CRON_SECRET: ${CRON_SECRET:-847a9777eb8ecc853f9dac473a0f79801d98ea67de3b0f16a1484364d3cad10d}
+      
+      # Google OAuth (optional)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     ports:
       - "${WEB_PORT:-3000}:3000"
     depends_on:
@@ -53,41 +82,39 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
+    volumes:
+      - cogumi_ai_protect_uploads:/app/uploads
 
-  # BullMQ Worker
+  # Background Worker (BullMQ job processor)
   worker:
     build:
       context: .
       dockerfile: apps/worker/Dockerfile
-    container_name: cogumi-worker
+    container_name: cogumi-ai-protect-worker
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/cogumi_ai_protect?schema=public
+      # Database (same as web)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-cogumi-ai-protect}?schema=public
+      
+      # Redis
       REDIS_URL: redis://redis:6379
-      WORKER_CONCURRENCY: 5
-      MAX_RUN_DURATION_MINUTES: 30
+      
+      # Worker Config
+      NODE_ENV: ${NODE_ENV:-development}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
+      MAX_RUN_DURATION_MINUTES: ${MAX_RUN_DURATION_MINUTES:-30}
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
     deploy:
       replicas: 1
 
-  # Demo AI Agent (for testing)
-  demo-agent:
-    build:
-      context: apps/demo-agent
-      dockerfile: Dockerfile
-    container_name: cogumi-demo-agent
-    environment:
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      PORT: 3001
-      HOST: 0.0.0.0
-    ports:
-      - "3001:3001"
-    restart: unless-stopped
-
 volumes:
-  postgres_data:
+  cogumi_ai_protect_postgres_data:
+    name: cogumi-ai-protect-postgres-data
+  cogumi_ai_protect_redis_data:
+    name: cogumi-ai-protect-redis-data
+  cogumi_ai_protect_uploads:
+    name: cogumi-ai-protect-uploads

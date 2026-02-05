@@ -8,4 +8,6 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-export { PrismaClient };
+// Re-export PrismaClient and all generated types
+export { PrismaClient } from '@prisma/client';
+export type * from '@prisma/client';

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Run, StoryStep, Finding, ScriptResult } from "@prisma/client";
+import type { Run, StoryStep, Finding, ScriptResult } from "@cogumi/db";
 
 /**
  * Report Generator
@@ -177,8 +177,10 @@ function buildMarkdownReport(data: ReportData): string {
     sections.push(`**Severity:** ${result.severity}`);
     sections.push(`**Status:** ${result.status}`);
     sections.push(``);
-    sections.push(result.summary);
-    sections.push(``);
+    if (result.summary) {
+      sections.push(result.summary);
+      sections.push(``);
+    }
   }
 
   // Detailed Findings

@@ -1,9 +1,13 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
-export default function AuthErrorPage() {
+// Force dynamic rendering (no static generation at build time)
+export const dynamic = 'force-dynamic';
+
+function AuthErrorPageContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
 
@@ -81,5 +85,13 @@ export default function AuthErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <AuthErrorPageContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { getScript, type ScriptId, type ScriptStep } from "./registry";
-import type { Run, Event } from "@prisma/client";
+import type { Run, Event } from "@cogumi/db";
 
 /**
  * Script Executor

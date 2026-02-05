@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate request body
-    const validation = ingestRequestSchema.safeParse(await req.json());
+    const validation = EventBatchSchema.safeParse(await req.json());
     
     if (!validation.success) {
       return NextResponse.json(

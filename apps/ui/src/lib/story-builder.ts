@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { Event, StoryStep, Severity } from "@prisma/client";
+import type { Event, StoryStep, Severity } from "@cogumi/db";
 
 /**
  * Story Builder Service

@@ -3,7 +3,7 @@ import type { RunDataSource } from './RunDataSource';
 
 // Fixture file structure (matches /fixtures/*.json)
 interface FixtureEvents {
-  events: Array<Omit<Event, 'id' | 'org_id' | 'project_id'>>;
+  events: Array<Omit<Event, 'id' | 'orgId' | 'projectId'>>;
 }
 
 interface FixtureStorySteps {
@@ -64,14 +64,14 @@ export class FixtureRunDataSource implements RunDataSource {
       // Create mock run
       this.run = {
         id: 'run-fixture',
-        org_id: 'org-fixture',
-        project_id: 'project-fixture',
+        orgId: 'org-fixture',
+        projectId: 'project-fixture',
         status: 'completed',
-        risk_score: 85,
-        started_at: '2026-02-02T12:00:00.000Z',
-        ended_at: '2026-02-02T12:05:00.000Z',
-        created_at: '2026-02-02T11:55:00.000Z',
-        created_by: 'user-fixture',
+        riskScore: 85,
+        startedAt: '2026-02-02T12:00:00.000Z',
+        endedAt: '2026-02-02T12:05:00.000Z',
+        createdAt: '2026-02-02T11:55:00.000Z',
+        createdBy: 'user-fixture',
       };
     } catch (error) {
       console.error('Failed to load fixtures:', error);
@@ -85,23 +85,27 @@ export class FixtureRunDataSource implements RunDataSource {
   ): Event {
     return {
       id: id,
-      org_id: 'org-fixture',
-      project_id: 'project-fixture',
-      run_id: 'run-fixture',
+      orgId: 'org-fixture',
+      projectId: 'project-fixture',
+      runId: 'run-fixture',
       ts: fixtureEvent.ts || new Date().toISOString(),
-      seq: fixtureEvent.seq,
+      seq: fixtureEvent.seq || 0,
       channel: fixtureEvent.channel || 'http',
       type: fixtureEvent.type || 'request',
       actor: fixtureEvent.actor || 'system',
-      destination: fixtureEvent.destination || {
-        host: 'unknown',
-        path: null,
-        classification: 'unknown',
-      },
-      http: fixtureEvent.http,
-      payload_redacted: fixtureEvent.payload_redacted,
-      matches: fixtureEvent.matches,
-      integrity_hash: fixtureEvent.integrity_hash,
+      host: fixtureEvent.host || 'unknown',
+      path: fixtureEvent.path || null,
+      port: fixtureEvent.port || null,
+      classification: fixtureEvent.classification || null,
+      method: fixtureEvent.method || null,
+      statusCode: fixtureEvent.statusCode || null,
+      bytesOut: fixtureEvent.bytesOut || null,
+      bytesIn: fixtureEvent.bytesIn || null,
+      durationMs: fixtureEvent.durationMs || null,
+      payloadRedacted: fixtureEvent.payloadRedacted || null,
+      matches: fixtureEvent.matches || null,
+      integrityHash: fixtureEvent.integrityHash || null,
+      createdAt: new Date().toISOString(),
     } as Event;
   }
 

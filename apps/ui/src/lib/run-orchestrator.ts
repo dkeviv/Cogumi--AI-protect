@@ -1,7 +1,7 @@
 import { db } from "@/lib/db";
-import { executeAllScripts, type ScriptResult } from "./scripts/executor";
-import { buildStoryForRun } from "./story-builder";
-import type { Run } from "@prisma/client";
+import { executeAllScripts, type ScriptResult } from "@/lib/scripts/executor";
+import { buildStoryForRun } from "@/lib/story-builder";
+import type { Run } from "@cogumi/db";
 
 /**
  * Run Orchestrator
