@@ -1,14 +1,163 @@
+import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
 export default async function HomePage() {
+  // Redirect logged-in users to dashboard
   const session = await auth();
-  if (!session) {
-    redirect('/login');
+  if (session) {
+    redirect('/dashboard');
   }
 
-  redirect('/dashboard');
-}
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Navigation */}
+      <nav className="border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center">
+                <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-rose-500 bg-clip-text text-transparent">
+                  Cogumi
+                </span>
+              </Link>
+              <div className="hidden md:flex ml-10 space-x-8">
+                <Link href="#features" className="text-gray-700 hover:text-gray-900 text-sm font-medium">
+                  Features
+                </Link>
+                <Link href="#how-it-works" className="text-gray-700 hover:text-gray-900 text-sm font-medium">
+                  How it works
+                </Link>
+                <Link href="#pricing" className="text-gray-700 hover:text-gray-900 text-sm font-medium">
+                  Pricing
+                </Link>
+                <a 
+                  href="https://aiprotect.cogumi.ai" 
+                  className="text-gray-700 hover:text-gray-900 text-sm font-medium"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Dashboard →
+                </a>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link 
+                href="/login"
+                className="text-gray-700 hover:text-gray-900 text-sm font-medium"
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/register"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Start testing
+              </Link>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-24 sm:pt-24 sm:pb-32">
+          <div className="text-center">
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 mb-6">
+              Red team your AI agents
+              <br />
+              <span className="bg-gradient-to-r from-blue-600 to-rose-500 bg-clip-text text-transparent">
+                before they leak secrets
+              </span>
+            </h1>
+            <p className="max-w-3xl mx-auto text-xl text-gray-600 mb-8">
+              Battle test your agents to make sure they don't leak secrets, attempt privileged actions, 
+              or become compromised by social engineering — with a replay and chain of evidence.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Link
+                href="/register"
+                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+              >
+                Start free trial
+              </Link>
+              <a
+                href="https://aiprotect.cogumi.ai"
+                className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                View demo →
+              </a>
+            </div>
+            <p className="mt-4 text-sm text-gray-500">
+              Pre-deployment testing for sandbox and staging environments • No production deployment required
+            </p>
+          </div>
+        </div>
+
+        {/* Gradient background */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-50 to-white" />
+        </div>
+      </section>
+
+      {/* Trust badges */}
+      <section className="border-t border-b border-gray-200 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-3xl font-bold text-gray-900">&lt;10min</div>
+              <div className="text-sm text-gray-600 mt-1">Time to first test</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">Zero trust</div>
+              <div className="text-sm text-gray-600 mt-1">No TLS decryption</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">100%</div>
+              <div className="text-sm text-gray-600 mt-1">Your environment</div>
+            </div>
+            <div>
+              <div className="text-3xl font-bold text-gray-900">Live replay</div>
+              <div className="text-sm text-gray-600 mt-1">Chain of evidence</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Built for AI agent security teams
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Universal testing platform that works with any agent framework, any language, any LLM provider.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="bg-white p-8 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Secret Leakage Detection</h3>
+              <p className="text-gray-600">
+                Detect API keys, tokens, and credentials in agent outputs. Identify attempted exfiltration via network intent.
+              </p>
+            </div>
+
+            <div className="bg-white p-8 rounded-lg border border-gray-200 hover:border-indigo-300 transition-colors">
+              <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Privilege Escalation</h3>
               <p className="text-gray-600">
                 Catch unauthorized DELETE/POST requests to sensitive endpoints and calls to disallowed destinations.
               </p>
