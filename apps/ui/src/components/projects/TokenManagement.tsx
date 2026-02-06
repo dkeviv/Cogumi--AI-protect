@@ -124,8 +124,8 @@ export function TokenManagement({ projectId }: { projectId: string }) {
   if (isLoading) {
     return (
       <div className="animate-pulse space-y-4">
-        <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-        <div className="h-20 bg-gray-200 rounded"></div>
+        <div className="h-8 rounded bg-slate-100 w-1/4"></div>
+        <div className="h-20 rounded bg-slate-100"></div>
       </div>
     );
   }
@@ -134,29 +134,29 @@ export function TokenManagement({ projectId }: { projectId: string }) {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Sidecar Tokens</h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <h3 className="text-lg font-semibold text-slate-900">Sidecar Tokens</h3>
+          <p className="text-sm text-slate-600 mt-1">
             Generate tokens for your sidecar proxies to authenticate with the platform
           </p>
         </div>
         <button
           onClick={createToken}
           disabled={isCreating}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {isCreating ? 'Generating...' : 'Generate Token'}
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-4">
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
       {/* New Token Modal */}
       {showNewToken && newTokenValue && (
-        <div className="mb-6 rounded-lg bg-blue-50 border border-blue-200 p-6">
+        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-6">
           <div className="flex items-start">
             <svg className="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
@@ -168,13 +168,13 @@ export function TokenManagement({ projectId }: { projectId: string }) {
               <p className="text-sm text-blue-800 mb-3">
                 Copy this token now. For security reasons, it won't be shown again.
               </p>
-              <div className="bg-white rounded border border-blue-300 p-3 mb-3">
-                <code className="text-sm text-gray-900 break-all font-mono">{newTokenValue}</code>
+              <div className="rounded border border-blue-200 bg-white p-3 mb-3">
+                <code className="text-sm text-slate-900 break-all font-mono">{newTokenValue}</code>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => copyToClipboard(newTokenValue)}
-                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700"
+                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
                 >
                   Copy Token
                 </button>
@@ -183,7 +183,7 @@ export function TokenManagement({ projectId }: { projectId: string }) {
                     setShowNewToken(false);
                     setNewTokenValue(null);
                   }}
-                  className="px-3 py-1.5 bg-white text-blue-600 text-sm font-medium rounded border border-blue-300 hover:bg-blue-50"
+                  className="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50"
                 >
                   Done
                 </button>
@@ -195,12 +195,12 @@ export function TokenManagement({ projectId }: { projectId: string }) {
 
       {/* Tokens List */}
       {tokens.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+        <div className="text-center py-12 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50">
           <svg className="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
           </svg>
-          <p className="text-gray-600 mb-2">No tokens yet</p>
-          <p className="text-sm text-gray-500">Generate a token to connect your sidecar proxy</p>
+          <p className="text-slate-600 mb-2">No tokens yet</p>
+          <p className="text-sm text-slate-500">Generate a token to connect your sidecar proxy</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -209,12 +209,12 @@ export function TokenManagement({ projectId }: { projectId: string }) {
             return (
               <div
                 key={token.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 hover:border-gray-300 transition-colors"
+                className="rounded-lg border border-slate-200 bg-white p-4 transition-colors hover:border-slate-300"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <code className="text-sm font-mono text-gray-600">
+                      <code className="text-sm font-mono text-slate-600">
                         {token.id.substring(0, 8)}...
                       </code>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusBadge(token.status)}`}>

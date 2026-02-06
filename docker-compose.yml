@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-cogumi-ai-protect}
     ports:
-      - "${POSTGRES_PORT:-5434}:5432"
+      - "${POSTGRES_PORT:-3002}:5432"
     volumes:
       - cogumi_ai_protect_postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -51,8 +51,9 @@ services:
       REDIS_URL: redis://redis:6379
       
       # NextAuth
-      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3001}
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-demo-secret-key-change-in-production-min-32-chars}
+      AUTH_TRUST_HOST: "true"
       
       # Email (optional for local dev)
       SMTP_HOST: ${SMTP_HOST:-}
@@ -69,6 +70,11 @@ services:
       MAX_RUN_DURATION_MINUTES: ${MAX_RUN_DURATION_MINUTES:-30}
       MAX_EVENTS_PER_MINUTE: ${MAX_EVENTS_PER_MINUTE:-300}
       
+      # Agent URL Security
+      REQUIRE_HTTPS_AGENT: "false"
+      ALLOW_LOCALHOST_AGENT: "true"
+      ALLOW_PRIVATE_IPS_AGENT: "true"
+      
       # Cron Secret (for scheduled jobs)
       CRON_SECRET: ${CRON_SECRET:-847a9777eb8ecc853f9dac473a0f79801d98ea67de3b0f16a1484364d3cad10d}
       
@@ -76,7 +82,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      - "${WEB_PORT:-3001}:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -110,6 +116,20 @@ services:
         condition: service_healthy
     deploy:
       replicas: 1
+
+  # Demo Agent (Optional - for testing)
+  demo-agent:
+    build:
+      context: ./apps/demo-agent
+      dockerfile: Dockerfile
+    container_name: cogumi-ai-protect-demo-agent
+    restart: unless-stopped
+    environment:
+      PORT: 3003
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-anthropic/claude-3.5-sonnet}
+    ports:
+      - "3003:3003"
 
 volumes:
   cogumi_ai_protect_postgres_data:

@@ -52,10 +52,10 @@ export function ProjectsList() {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+      <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
         <div className="animate-pulse flex flex-col items-center">
-          <div className="h-12 w-12 bg-gray-200 rounded-full mb-4"></div>
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
+          <div className="h-12 w-12 rounded-full bg-slate-100 mb-4"></div>
+          <div className="h-4 w-32 rounded bg-slate-100"></div>
         </div>
       </div>
     );
@@ -63,7 +63,7 @@ export function ProjectsList() {
 
   if (error) {
     return (
-      <div className="bg-white rounded-lg border border-red-200 p-12 text-center">
+      <div className="rounded-lg border border-red-200 bg-white p-12 text-center">
         <p className="text-red-600 mb-4">{error}</p>
         <button
           onClick={fetchProjects}
@@ -78,9 +78,9 @@ export function ProjectsList() {
   if (projects.length === 0) {
     return (
       <>
-        <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+        <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
           <div className="max-w-sm mx-auto">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-4">
               <svg
                 className="w-8 h-8 text-blue-600"
                 fill="none"
@@ -98,12 +98,12 @@ export function ProjectsList() {
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Create your first project
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-slate-600 mb-6">
               Set up a project to start red teaming your AI agents. Connect your sidecar proxy and run automated security tests.
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
               Create Project
             </button>
@@ -128,7 +128,7 @@ export function ProjectsList() {
       <div className="mb-4 flex justify-end">
         <button
           onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+          className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
         >
           <svg
             className="w-5 h-5 mr-2"
@@ -152,23 +152,23 @@ export function ProjectsList() {
           <Link
             key={project.id}
             href={`/projects/${project.id}`}
-            className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all"
+            className="rounded-lg border border-slate-200 bg-white p-6 transition-all hover:border-slate-300 hover:shadow-sm"
           >
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900 truncate flex-1">
+              <h3 className="text-lg font-semibold text-slate-900 truncate flex-1">
                 {project.name}
               </h3>
               <span
-                className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getEnvironmentBadge(
+                className={`ml-2 rounded-full px-2 py-1 text-xs font-medium ${getEnvironmentBadge(
                   project.environment
                 )}`}
               >
                 {project.environment}
               </span>
             </div>
-            <div className="text-sm text-gray-600 space-y-1">
+            <div className="space-y-1 text-sm text-slate-600">
               <p>{project._count.runs} runs</p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-slate-500">
                 Created {new Date(project.createdAt).toLocaleDateString()}
               </p>
             </div>
@@ -199,7 +199,6 @@ function CreateProjectModal({
 }) {
   const [name, setName] = useState('');
   const [environment, setEnvironment] = useState<'sandbox' | 'staging' | 'prod'>('sandbox');
-  const [prodOverride, setProdOverride] = useState(false);
   const [prodConfirm1, setProdConfirm1] = useState(false); // Not customer-facing
   const [prodConfirm2, setProdConfirm2] = useState(false); // No real secrets
   const [prodConfirm3, setProdConfirm3] = useState(false); // Accept unsafe behavior
@@ -240,8 +239,9 @@ function CreateProjectModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Project</h2>
+      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--app-shadow-card)]">
+        <h2 className="text-xl font-semibold text-slate-900 mb-2">Create New Project</h2>
+        <p className="text-sm text-slate-500 mb-4">Define the environment, then connect your sidecar.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -260,7 +260,7 @@ function CreateProjectModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="My AI Agent Project"
             />
           </div>
@@ -273,7 +273,7 @@ function CreateProjectModal({
               id="environment"
               value={environment}
               onChange={(e) => setEnvironment(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="sandbox">Sandbox (recommended)</option>
               <option value="staging">Staging</option>
@@ -282,38 +282,39 @@ function CreateProjectModal({
           </div>
 
           {environment === 'prod' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <div className="text-sm font-semibold text-amber-900 mb-1">Production Override Checklist</div>
+              <p className="text-xs text-amber-700 mb-3">
+                All items are required to enable production testing.
+              </p>
+              <div className="space-y-2 text-sm text-amber-900">
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={prodConfirm1}
+                    onChange={(e) => setProdConfirm1(e.target.checked)}
+                    className="mt-1 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
                   />
-                </svg>
-                <div>
-                  <h4 className="text-sm font-semibold text-yellow-800 mb-1">
-                    Production Environment Warning
-                  </h4>
-                  <p className="text-sm text-yellow-700 mb-2">
-                    Running red team tests in production can expose real secrets and trigger real actions. Ensure you understand the risks.
-                  </p>
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={prodOverride}
-                      onChange={(e) => setProdOverride(e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="ml-2 text-sm text-yellow-800">
-                      I understand the risks and want to enable production testing
-                    </span>
-                  </label>
-                </div>
+                  This is not customer-facing production traffic.
+                </label>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={prodConfirm2}
+                    onChange={(e) => setProdConfirm2(e.target.checked)}
+                    className="mt-1 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
+                  />
+                  No real customer secrets are stored in this environment.
+                </label>
+                <label className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={prodConfirm3}
+                    onChange={(e) => setProdConfirm3(e.target.checked)}
+                    className="mt-1 rounded border-amber-300 text-amber-700 focus:ring-amber-500"
+                  />
+                  I accept that adversarial prompts may trigger unsafe behavior.
+                </label>
               </div>
             </div>
           )}
@@ -322,7 +323,7 @@ function CreateProjectModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
+              className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900"
               disabled={isSubmitting}
             >
               Cancel
@@ -330,7 +331,7 @@ function CreateProjectModal({
             <button
               type="submit"
               disabled={isSubmitting || (environment === 'prod' && !allConfirmationsChecked)}
-              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? 'Creating...' : 'Create Project'}
             </button>

@@ -58,6 +58,10 @@ export function ProjectSettings({ project }: { project: Project }) {
     try {
       const response = await fetch(`/api/projects/${project.id}/validate-agent`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentTestUrl: formData.agentTestUrl,
+        }),
       });
 
       const data = await response.json();
@@ -151,25 +155,25 @@ export function ProjectSettings({ project }: { project: Project }) {
     <div className="space-y-6">
       {/* Success Message */}
       {saveSuccess && (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-          <p className="text-sm text-green-800">Settings saved successfully!</p>
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-sm text-emerald-800">Settings saved successfully.</p>
         </div>
       )}
 
       {/* Error Message */}
       {saveError && (
-        <div className="rounded-lg bg-red-50 border border-red-200 p-4">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
           <p className="text-sm text-red-800">{saveError}</p>
         </div>
       )}
 
       {/* Basic Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Settings</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--app-shadow-card)]">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Basic Settings</h2>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
               Project Name
             </label>
             <input
@@ -177,19 +181,19 @@ export function ProjectSettings({ project }: { project: Project }) {
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label htmlFor="environment" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="environment" className="block text-sm font-medium text-slate-700 mb-1">
               Environment
             </label>
             <select
               id="environment"
               value={formData.environment}
               onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="sandbox">Sandbox</option>
               <option value="staging">Staging</option>
@@ -198,7 +202,7 @@ export function ProjectSettings({ project }: { project: Project }) {
           </div>
 
           {formData.environment === 'prod' && (
-            <div className="border-l-4 border-red-500 bg-red-50 p-4 rounded">
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -207,7 +211,7 @@ export function ProjectSettings({ project }: { project: Project }) {
                 </div>
                 <div className="ml-3 flex-1">
                   <h4 className="text-sm font-bold text-red-800 mb-2">
-                    ⚠️ DANGER: Production Environment Testing
+                    DANGER: Production Environment Testing
                   </h4>
                   <p className="text-sm text-red-700 mb-4">
                     You must confirm all safety requirements to enable production testing.
@@ -253,7 +257,7 @@ export function ProjectSettings({ project }: { project: Project }) {
 
                   {!allConfirmationsChecked && (
                     <p className="mt-3 text-xs text-red-600 font-semibold">
-                      ⚠️ All three confirmations are required
+                      All three confirmations are required
                     </p>
                   )}
                 </div>
@@ -262,7 +266,7 @@ export function ProjectSettings({ project }: { project: Project }) {
           )}
 
           <div>
-            <label htmlFor="retentionDays" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="retentionDays" className="block text-sm font-medium text-slate-700 mb-1">
               Data Retention (days)
             </label>
             <input
@@ -272,9 +276,9 @@ export function ProjectSettings({ project }: { project: Project }) {
               max="365"
               value={formData.retentionDays}
               onChange={(e) => setFormData({ ...formData, retentionDays: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               How long to keep test runs and events (1-365 days)
             </p>
           </div>
@@ -282,12 +286,12 @@ export function ProjectSettings({ project }: { project: Project }) {
       </div>
 
       {/* Agent Endpoint */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Agent Endpoint</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--app-shadow-card)]">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Agent Endpoint</h2>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="agentTestUrl" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="agentTestUrl" className="block text-sm font-medium text-slate-700 mb-1">
               Test Endpoint URL
             </label>
             <div className="flex gap-2">
@@ -297,17 +301,17 @@ export function ProjectSettings({ project }: { project: Project }) {
                 value={formData.agentTestUrl}
                 onChange={(e) => setFormData({ ...formData, agentTestUrl: e.target.value })}
                 placeholder="http://localhost:3000/api/chat"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={validateAgent}
                 disabled={isValidating || !formData.agentTestUrl}
-                className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                className="whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isValidating ? 'Testing...' : 'Test Connection'}
               </button>
             </div>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               The URL where your AI agent receives messages for testing
             </p>
           </div>
@@ -316,7 +320,7 @@ export function ProjectSettings({ project }: { project: Project }) {
           {validationResult && (
             <div className={`rounded-lg border p-4 ${
               validationResult.success && validationResult.reachable
-                ? 'bg-green-50 border-green-200'
+                ? 'bg-emerald-50 border-emerald-200'
                 : 'bg-red-50 border-red-200'
             }`}>
               <div className="flex items-start">
@@ -343,12 +347,12 @@ export function ProjectSettings({ project }: { project: Project }) {
       </div>
 
       {/* Security Configuration */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Security Configuration</h2>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--app-shadow-card)]">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Security Configuration</h2>
         
         <div className="space-y-4">
           <div>
-            <label htmlFor="toolDomains" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="toolDomains" className="block text-sm font-medium text-slate-700 mb-1">
               Allowed Tool Domains
             </label>
             <input
@@ -357,15 +361,15 @@ export function ProjectSettings({ project }: { project: Project }) {
               value={formData.toolDomains}
               onChange={(e) => setFormData({ ...formData, toolDomains: e.target.value })}
               placeholder="api.openai.com, api.anthropic.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               Comma-separated list of domains your agent is allowed to call
             </p>
           </div>
 
           <div>
-            <label htmlFor="internalSuffixes" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="internalSuffixes" className="block text-sm font-medium text-slate-700 mb-1">
               Internal Domain Suffixes
             </label>
             <input
@@ -374,9 +378,9 @@ export function ProjectSettings({ project }: { project: Project }) {
               value={formData.internalSuffixes}
               onChange={(e) => setFormData({ ...formData, internalSuffixes: e.target.value })}
               placeholder=".internal, .local, .corp"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 mt-1">
               Comma-separated list of internal domain suffixes to flag privilege escalation attempts
             </p>
           </div>
@@ -387,14 +391,14 @@ export function ProjectSettings({ project }: { project: Project }) {
       <div className="flex justify-end gap-3">
         <button
           onClick={() => router.back()}
-          className="px-6 py-2 text-gray-700 hover:text-gray-900"
+          className="px-6 py-2 text-sm text-slate-600 hover:text-slate-900"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSaving ? 'Saving...' : 'Save Changes'}
         </button>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { AppHeader } from '@/components/nav/AppHeader';
 
 interface Run {
   id: string;
@@ -126,14 +127,28 @@ export default function ProjectRunsPage({ params }: { params: { projectId: strin
   };
 
   return (
-    <div className="p-8">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
+      <AppHeader
+        title={`${project.name} · Runs`}
+        backHref={`/projects/${projectId}`}
+        backLabel="Project"
+        rightSlot={
+          <Link
+            href={`/projects/${projectId}/settings`}
+            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+          >
+            Settings
+          </Link>
+        }
+      />
+      <main className="mx-auto max-w-6xl px-6 py-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900">{project.name}</h1>
+          <p className="text-sm text-slate-500 mt-1">
             Environment:{' '}
-            <span className="px-2 py-1 bg-gray-100 rounded text-sm font-medium">
+            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
               {project.environment}
             </span>
           </p>
@@ -141,14 +156,14 @@ export default function ProjectRunsPage({ params }: { params: { projectId: strin
         <div className="flex gap-3">
           <Link
             href={`/projects/${projectId}/settings`}
-            className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+            className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
             Settings
           </Link>
           <button
             onClick={handleCreateRun}
             disabled={creating}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {creating ? 'Creating...' : '+ New Run'}
           </button>
@@ -156,7 +171,7 @@ export default function ProjectRunsPage({ params }: { params: { projectId: strin
       </div>
 
       {/* Runs Table */}
-      <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="rounded-xl border border-slate-200 bg-white shadow-[var(--app-shadow-card)] overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -183,7 +198,7 @@ export default function ProjectRunsPage({ params }: { params: { projectId: strin
           <tbody className="bg-white divide-y divide-gray-200">
             {runs.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
                   No runs yet. Create your first run to test your AI agent!
                 </td>
               </tr>
@@ -249,6 +264,7 @@ export default function ProjectRunsPage({ params }: { params: { projectId: strin
           </tbody>
         </table>
       </div>
+      </main>
     </div>
   );
 }

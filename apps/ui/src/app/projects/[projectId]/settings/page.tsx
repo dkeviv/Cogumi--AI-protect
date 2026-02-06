@@ -4,6 +4,8 @@ import { prisma } from '@cogumi/db';
 import { getOrgId } from '@/lib/session';
 import Link from 'next/link';
 import { ProjectSettings } from '@/components/projects/ProjectSettings';
+import { AppHeader } from '@/components/nav/AppHeader';
+import { TokenManagement } from '@/components/projects/TokenManagement';
 
 export default async function SettingsPage({ params }: { params: { projectId: string } }) {
   const session = await auth();
@@ -22,29 +24,28 @@ export default async function SettingsPage({ params }: { params: { projectId: st
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link href={`/projects/${params.projectId}`} className="text-gray-600 hover:text-gray-900">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <h1 className="text-xl font-bold text-gray-900">Settings - {project.name}</h1>
-            </div>
-            <Link href={`/projects/${params.projectId}`} className="text-sm text-gray-600 hover:text-gray-900">
-              Back to Project
-            </Link>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
+      <AppHeader
+        title={`Settings · ${project.name}`}
+        backHref={`/projects/${params.projectId}`}
+        backLabel="Project"
+        rightSlot={
+          <Link
+            href={`/projects/${params.projectId}`}
+            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+          >
+            Back to Project
+          </Link>
+        }
+      />
+
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <div className="space-y-6">
+          <ProjectSettings project={project} />
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--app-shadow-card)]">
+            <TokenManagement projectId={params.projectId} />
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProjectSettings project={project} />
       </main>
     </div>
   );

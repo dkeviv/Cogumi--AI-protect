@@ -23,7 +23,7 @@ export function EvidenceTabs({
   const [activeTab, setActiveTab] = useState<TabId>('conversation');
 
   // Filter events by channel for different tabs
-  const conversationEvents = events.filter(e => e.channel === 'http' && e.type === 'agent.message');
+  const conversationEvents = events.filter(e => e.type === 'agent.message');
   const networkEvents = events.filter(e => e.channel === 'http');
 
   // Highlight events at or before currentSeq
@@ -33,9 +33,9 @@ export function EvidenceTabs({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-gray-200">
+    <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white shadow-[var(--app-shadow-card)]">
       {/* Tab headers */}
-      <div className="flex border-b border-gray-200">
+      <div className="flex gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
         <TabButton
           id="conversation"
           label="Conversation"
@@ -105,18 +105,15 @@ function TabButton({
   return (
     <button
       onClick={onClick}
-      className={`
-        px-4 py-3 text-sm font-medium border-b-2 transition-colors
-        ${
-          active
-            ? 'border-blue-600 text-blue-600'
-            : 'border-transparent text-gray-600 hover:text-gray-900'
-        }
-      `}
+      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+        active
+          ? 'bg-white text-blue-700 shadow-sm'
+          : 'text-slate-600 hover:text-slate-900'
+      }`}
     >
       {label}
       {count > 0 && (
-        <span className="ml-2 px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded-full">
+        <span className="ml-2 rounded-full bg-slate-200 px-2 py-0.5 text-[10px] text-slate-700">
           {count}
         </span>
       )}
@@ -133,7 +130,7 @@ function ConversationTab({
 }) {
   if (events.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="text-center text-slate-500 py-8">
         <p>No agent conversations recorded.</p>
       </div>
     );
@@ -143,25 +140,26 @@ function ConversationTab({
     <div className="space-y-3">
       {events.map(event => {
         const highlighted = isHighlighted(event);
-        const isRequest = event.type === 'request';
+        const isRequest = event.actor === 'adversary' || event.type === 'request';
+        const label = event.actor === 'target' ? 'RESPONSE' : isRequest ? 'REQUEST' : 'MESSAGE';
 
         return (
           <div
             key={event.id}
-            className={`p-3 rounded-lg border ${
-              highlighted ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+            className={`rounded-lg border p-3 ${
+              highlighted ? 'border-blue-200 bg-blue-50' : 'border-slate-200'
             }`}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className={`text-xs font-semibold ${isRequest ? 'text-purple-700' : 'text-green-700'}`}>
-                {isRequest ? 'REQUEST' : 'RESPONSE'}
+              <span className={`text-xs font-semibold ${isRequest ? 'text-purple-700' : 'text-emerald-700'}`}>
+                {label}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-slate-500">
                 seq {event.seq || 'N/A'}
               </span>
             </div>
             {event.payloadRedacted?.bodyRedactedPreview && (
-              <pre className="text-sm bg-white p-2 rounded border border-gray-200 overflow-x-auto max-h-32">
+              <pre className="max-h-32 overflow-x-auto rounded border border-slate-200 bg-slate-50 p-2 text-xs font-mono text-slate-700">
                 {event.payloadRedacted.bodyRedactedPreview}
               </pre>
             )}
@@ -181,7 +179,7 @@ function NetworkTab({
 }) {
   if (events.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="text-center text-slate-500 py-8">
         <p>No network events recorded.</p>
       </div>
     );
@@ -195,30 +193,30 @@ function NetworkTab({
         return (
           <div
             key={event.id}
-            className={`p-3 rounded border text-sm ${
-              highlighted ? 'border-blue-300 bg-blue-50' : 'border-gray-200'
+            className={`rounded border p-3 text-sm ${
+              highlighted ? 'border-blue-200 bg-blue-50' : 'border-slate-200'
             }`}
           >
             <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-xs">
+              <span className="font-mono text-xs text-slate-700">
                 {event.method || 'HTTP'}
               </span>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-slate-500">
                 seq {event.seq || 'N/A'}
               </span>
             </div>
-            <div className="font-mono text-xs text-gray-700 truncate">
+            <div className="font-mono text-xs text-slate-700 truncate">
               {event.host}
-              {event.path}
+              {event.path || ''}
             </div>
             {event.statusCode && (
-              <div className="text-xs text-gray-600 mt-1">
+              <div className="text-xs text-slate-600 mt-1">
                 Status: {event.statusCode}
               </div>
             )}
             {event.matches && event.matches.length > 0 && (
               <div className="mt-2 text-xs text-red-700 font-semibold">
-                🔴 {event.matches.length} secret match(es)
+                {event.matches.length} secret match(es)
               </div>
             )}
           </div>
@@ -231,7 +229,7 @@ function NetworkTab({
 function FindingsTab({ findings }: { findings: Finding[] }) {
   if (findings.length === 0) {
     return (
-      <div className="text-center text-gray-500 py-8">
+      <div className="text-center text-slate-500 py-8">
         <p>No findings yet.</p>
       </div>
     );
@@ -253,20 +251,20 @@ function FindingsTab({ findings }: { findings: Finding[] }) {
         return (
           <div
             key={finding.id}
-            className={`p-4 rounded-lg border-l-4 ${severityColor}`}
+            className={`rounded-lg border border-slate-200 p-4 ${severityColor}`}
           >
             <div className="flex items-start justify-between mb-2">
               <div>
-                <div className="font-semibold text-gray-900">{finding.title}</div>
-                <div className="text-xs text-gray-600 mt-1">{finding.status}</div>
+                <div className="text-sm font-semibold text-slate-900">{finding.title}</div>
+                <div className="text-xs text-slate-600 mt-1">{finding.status}</div>
               </div>
-              <span className="text-xs font-semibold text-gray-700 uppercase">
+              <span className="text-xs font-semibold text-slate-700 uppercase">
                 {finding.severity}
               </span>
             </div>
-            <p className="text-sm text-gray-700">{finding.summary}</p>
+            <p className="text-sm text-slate-700">{finding.summary}</p>
             {finding.scriptId && (
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="text-xs text-slate-500 mt-2">
                 Script: {finding.scriptId}
               </div>
             )}
@@ -279,7 +277,7 @@ function FindingsTab({ findings }: { findings: Finding[] }) {
 
 function PolicyTab() {
   return (
-    <div className="text-center text-gray-500 py-8">
+    <div className="text-center text-slate-500 py-8">
       <p>Policy violations tab (coming soon)</p>
     </div>
   );
@@ -287,7 +285,7 @@ function PolicyTab() {
 
 function MemoryTab() {
   return (
-    <div className="text-center text-gray-500 py-8">
+    <div className="text-center text-slate-500 py-8">
       <p>Memory tab (coming soon)</p>
     </div>
   );

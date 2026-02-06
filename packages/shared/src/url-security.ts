@@ -7,6 +7,7 @@
 
 export interface UrlValidationOptions {
   allowLocalhost?: boolean;
+  allowPrivateIPs?: boolean;
   requireHttps?: boolean;
   allowedProtocols?: string[];
 }
@@ -71,6 +72,7 @@ export function getUrlValidationOptions(): UrlValidationOptions {
   
   return {
     allowLocalhost: isDevelopment || process.env.ALLOW_LOCALHOST_AGENT === 'true',
+    allowPrivateIPs: isDevelopment || process.env.ALLOW_PRIVATE_IPS_AGENT === 'true',
     requireHttps: process.env.REQUIRE_HTTPS_AGENT !== 'false' && !isDevelopment,
     allowedProtocols: ['http:', 'https:'],
   };
@@ -149,11 +151,11 @@ export function validateAgentUrl(
   // Strip brackets for IPv6
   const ipToCheck = hostname.replace(/^\[|\]$/g, '');
   
-  if (isPrivateIP(ipToCheck)) {
+  if (isPrivateIP(ipToCheck) && !opts.allowPrivateIPs) {
     return {
       valid: false,
       error: 'Private IP addresses are not allowed',
-      securityNote: 'This prevents SSRF attacks against internal services (10.x, 192.168.x, 172.16-31.x, link-local)',
+      securityNote: 'This prevents SSRF attacks against internal services (10.x, 192.168.x, 172.16-31.x, link-local). Set ALLOW_PRIVATE_IPS_AGENT=true in development for Docker networks.',
     };
   }
 

@@ -3,69 +3,44 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 222.2 84% 4.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222.2 84% 4.9%;
-  --primary: 221.2 83.2% 53.3%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
-  --radius: 0.5rem;
-  
-  /* Severity colors */
-  --severity-critical: 0 84.2% 60.2%;
-  --severity-high: 25 95% 53%;
-  --severity-medium: 45 93% 47%;
-  --severity-low: 142 76% 36%;
-  --severity-info: 221.2 83.2% 53.3%;
-  
-  /* Environment badge colors */
-  --env-sandbox: 142 76% 36%;
-  --env-staging: 45 93% 47%;
-  --env-prod: 0 84.2% 60.2%;
-}
+  --app-bg: #f6f7fb;
+  --app-text: #0c0f14;
+  --app-text-muted: #576071;
+  --app-card: #ffffff;
+  --app-border: #e6e8ed;
+  --app-accent: #2563eb;
+  --app-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --app-shadow-drawer: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --radius: 12px;
 
-.dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 47.4% 11.2%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  /* Severity colors */
+  --severity-critical: #dc2626;
+  --severity-high: #f97316;
+  --severity-medium: #eab308;
+  --severity-low: #3b82f6;
+  --severity-info: #6b7280;
+
+  /* Environment badge colors */
+  --env-sandbox: #3b82f6;
+  --env-staging: #eab308;
+  --env-prod: #dc2626;
 }
 
 * {
-  @apply border-border;
+  border-color: var(--app-border);
 }
 
 body {
-  @apply bg-background text-foreground;
+  background-color: var(--app-bg);
+  color: var(--app-text);
   font-feature-settings: "rlig" 1, "calt" 1;
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 /* Custom scrollbar */
@@ -75,15 +50,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  background-color: #eef1f6;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border rounded-md;
+  background-color: #dfe3ea;
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground;
+  background-color: #c6ccd6;
 }
 
 /* Animations */
@@ -115,36 +91,30 @@ body {
   animation: pulse-highlight 1.5s ease-out;
 }
 
-/* Severity badge styles */
-.severity-critical {
-  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+/* Timeline slider styles */
+.timeline-slider {
+  appearance: none;
+  height: 6px;
+  background: #e6e8ed;
+  border-radius: 999px;
+  outline: none;
 }
 
-.severity-high {
-  @apply bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200;
+.timeline-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #2563eb;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }
 
-.severity-medium {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
-}
-
-.severity-low {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
-}
-
-.severity-info {
-  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
-}
-
-/* Environment badge styles */
-.env-sandbox {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
-}
-
-.env-staging {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
-}
-
-.env-prod {
-  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
+.timeline-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #2563eb;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }

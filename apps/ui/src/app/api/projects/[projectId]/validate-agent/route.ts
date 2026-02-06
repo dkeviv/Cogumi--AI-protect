@@ -13,6 +13,10 @@ export async function POST(
     const orgId = await getOrgId();
     const { projectId } = params;
 
+    // Parse request body to get URL (if provided)
+    const body = await request.json().catch(() => ({}));
+    const { agentTestUrl: urlFromBody } = body;
+
     // Verify project belongs to org
     const project = await prisma.project.findUnique({
       where: { id: projectId },
@@ -32,7 +36,15 @@ export async function POST(
       );
     }
 
-    if (!project.agentTestUrl) {
+    // Use URL from request body, or fall back to saved project URL
+    const agentTestUrl = urlFromBody || project.agentTestUrl;
+
+    console.log('[validate-agent] Testing URL:', agentTestUrl);
+    console.log('[validate-agent] URL from body:', urlFromBody);
+    console.log('[validate-agent] URL from project:', project.agentTestUrl);
+
+    if (!agentTestUrl) {
+      console.log('[validate-agent] ERROR: No agent test URL configured');
       return NextResponse.json(
         { error: 'No agent test URL configured' },
         { status: 400 }
@@ -41,16 +53,19 @@ export async function POST(
 
     // SECURITY: Validate URL to prevent SSRF attacks
     const urlValidation = validateAgentUrl(
-      project.agentTestUrl,
+      agentTestUrl,
       getUrlValidationOptions()
     );
     
+    console.log('[validate-agent] Validation result:', urlValidation);
+
     if (!urlValidation.valid) {
+      console.log('[validate-agent] ERROR: URL validation failed -', urlValidation.error);
       return NextResponse.json(
         { 
           error: 'Invalid agent URL',
           details: urlValidation.error,
-          securityNote: 'Private IPs, cloud metadata endpoints, and non-HTTP(S) protocols are blocked for security.',
+          securityNote: urlValidation.securityNote,
         },
         { status: 400 }
       );
@@ -61,7 +76,7 @@ export async function POST(
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-      const response = await fetch(project.agentTestUrl, {
+      const response = await fetch(agentTestUrl, {
         method: 'GET',
         signal: controller.signal,
         headers: {

@@ -6,6 +6,7 @@ import { ProofDrawer } from '@/components/run/ProofDrawer';
 import { TimelineScrubber } from '@/components/run/TimelineScrubber';
 import { EvidenceTabs } from '@/components/run/EvidenceTabs';
 import { RunHeader } from '@/components/run/RunHeader';
+import { getRunDataSource } from '@/lib/runDataSource';
 
 // Simplified types matching our API responses
 interface Run {
@@ -80,64 +81,35 @@ export default function RunPage({ params }: { params: { runId: string } }) {
 
   // Load initial data
   useEffect(() => {
-    let eventSource: EventSource | null = null;
+    let unsubscribe: (() => void) | null = null;
 
     async function loadData() {
       try {
         setLoading(true);
+        const dataSource = getRunDataSource();
+        const data = await dataSource.getInitialData(runId);
 
-        const [runRes, stepsRes, findingsRes, eventsRes] = await Promise.all([
-          fetch(`/api/runs/${runId}`),
-          fetch(`/api/runs/${runId}/story`),
-          fetch(`/api/runs/${runId}/findings`),
-          fetch(`/api/runs/${runId}/events`),
-        ]);
-
-        if (!runRes.ok) throw new Error('Failed to load run');
-
-        const runData = await runRes.json();
-        const stepsData = await stepsRes.json();
-        const findingsData = await findingsRes.json();
-        const eventsData = await eventsRes.json();
-
-        setRun(runData.run);
-        setStorySteps(stepsData.steps || []);
-        setFindings(findingsData.findings || []);
-        setEvents(eventsData.events || []);
+        setRun(data.run);
+        setStorySteps(data.storySteps || []);
+        setFindings(data.findings || []);
+        setEvents(data.events || []);
 
         // Set initial currentSeq to max seq
-        const maxSeq = Math.max(...(eventsData.events || []).map((e: Event) => e.seq || 0), 0);
+        const maxSeq = Math.max(...(data.events || []).map((e: Event) => e.seq || 0), 0);
         setCurrentSeq(maxSeq);
 
         // Subscribe to live updates if run is active
-        if (runData.run.status === 'running') {
-          eventSource = new EventSource(`/api/runs/${runId}/stream`);
-
-          eventSource.addEventListener('story_step', (e: MessageEvent) => {
-            const data = JSON.parse(e.data);
-            setStorySteps((prev) => [...prev, data.data]);
+        if (data.run.status === 'running') {
+          unsubscribe = dataSource.subscribe(runId, {
+            onStoryStep: (step) => setStorySteps((prev) => [...prev, step]),
+            onFinding: (finding) => setFindings((prev) => [...prev, finding]),
+            onRunStatus: (status) => {
+              setRun((prev) => (prev ? { ...prev, status } : null));
+              if (['completed', 'failed', 'canceled'].includes(status)) {
+                unsubscribe?.();
+              }
+            },
           });
-
-          eventSource.addEventListener('finding', (e: MessageEvent) => {
-            const data = JSON.parse(e.data);
-            setFindings((prev) => [...prev, data.data]);
-          });
-
-          eventSource.addEventListener('run_status', (e: MessageEvent) => {
-            const data = JSON.parse(e.data);
-            if (data.data.status) {
-              setRun((prev) => prev ? { ...prev, status: data.data.status } : null);
-            }
-            // Close SSE if run completed
-            if (['completed', 'failed', 'canceled'].includes(data.data.status)) {
-              eventSource?.close();
-            }
-          });
-
-          eventSource.onerror = () => {
-            console.error('SSE error');
-            eventSource?.close();
-          };
         }
 
         setLoading(false);
@@ -151,9 +123,7 @@ export default function RunPage({ params }: { params: { runId: string } }) {
     loadData();
 
     return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
+      unsubscribe?.();
     };
   }, [runId]);
 
@@ -199,10 +169,9 @@ export default function RunPage({ params }: { params: { runId: string } }) {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
         <div className="text-center">
-          <div className="text-4xl mb-4">⏳</div>
-          <p className="text-lg text-gray-600">Loading run data...</p>
+          <p className="text-lg text-slate-600">Loading run data...</p>
         </div>
       </div>
     );
@@ -211,13 +180,12 @@ export default function RunPage({ params }: { params: { runId: string } }) {
   // Error state
   if (error || !run) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
         <div className="text-center">
-          <div className="text-4xl mb-4">❌</div>
-          <p className="text-lg text-gray-900 font-semibold">
+          <p className="text-lg text-slate-900 font-semibold">
             Failed to load run
           </p>
-          <p className="text-sm text-gray-600 mt-2">{error}</p>
+          <p className="text-sm text-slate-600 mt-2">{error}</p>
         </div>
       </div>
     );
@@ -226,14 +194,14 @@ export default function RunPage({ params }: { params: { runId: string } }) {
   const isLive = run.status === 'running';
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
       {/* Header */}
       <RunHeader run={run as any} />
 
       {/* 3-column layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex gap-6 overflow-hidden px-6 py-6">
         {/* Left: Exploit Feed */}
-        <div className="w-1/3 flex flex-col">
+        <div className="w-[34%] flex flex-col">
           <ExploitFeed
             steps={storySteps as any}
             selectedStepId={selectedStepId || undefined}
@@ -249,7 +217,7 @@ export default function RunPage({ params }: { params: { runId: string } }) {
         </div>
 
         {/* Center: Timeline Scrubber */}
-        <div className="w-64 flex-shrink-0">
+        <div className="w-72 flex-shrink-0">
           <TimelineScrubber
             markers={timelineMarkers}
             currentSeq={currentSeq}
@@ -281,4 +249,3 @@ export default function RunPage({ params }: { params: { runId: string } }) {
     </div>
   );
 }
-

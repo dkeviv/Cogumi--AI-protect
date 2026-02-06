@@ -8,23 +8,22 @@ interface RunHeaderProps {
 }
 
 const STATUS_COLORS = {
-  queued: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  running: 'bg-blue-100 text-blue-800 border-blue-300',
-  completed: 'bg-green-100 text-green-800 border-green-300',
-  failed: 'bg-red-100 text-red-800 border-red-300',
-  canceled: 'bg-gray-100 text-gray-800 border-gray-300',
-  stopped_quota: 'bg-orange-100 text-orange-800 border-orange-300',
+  queued: 'bg-amber-100 text-amber-800 border-amber-200',
+  running: 'bg-blue-100 text-blue-800 border-blue-200',
+  completed: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  failed: 'bg-red-100 text-red-800 border-red-200',
+  canceled: 'bg-slate-100 text-slate-700 border-slate-200',
+  stopped_quota: 'bg-orange-100 text-orange-800 border-orange-200',
 };
 
 const ENVIRONMENT_COLORS = {
-  production: 'bg-red-100 text-red-900 border-red-300',
-  staging: 'bg-yellow-100 text-yellow-900 border-yellow-300',
-  development: 'bg-green-100 text-green-900 border-green-300',
-  test: 'bg-blue-100 text-blue-900 border-blue-300',
+  prod: 'bg-red-100 text-red-900 border-red-200',
+  staging: 'bg-amber-100 text-amber-900 border-amber-200',
+  sandbox: 'bg-blue-100 text-blue-900 border-blue-200',
 };
 
 function getRiskScoreColor(score: number | null): string {
-  if (!score) return 'text-gray-400';
+  if (!score) return 'text-slate-400';
   if (score >= 80) return 'text-red-600';
   if (score >= 60) return 'text-orange-600';
   if (score >= 40) return 'text-yellow-600';
@@ -52,9 +51,8 @@ export function RunHeader({ run }: RunHeaderProps) {
   
   const statusColor = STATUS_COLORS[run.status as keyof typeof STATUS_COLORS] || STATUS_COLORS.running;
 
-  // Mock environment (will come from project in real implementation)
-  const environment = 'production'; // TODO: get from run.project.environment
-  const envColor = ENVIRONMENT_COLORS[environment as keyof typeof ENVIRONMENT_COLORS] || ENVIRONMENT_COLORS.development;
+  const environment = (run as any).project?.environment || 'sandbox';
+  const envColor = ENVIRONMENT_COLORS[environment as keyof typeof ENVIRONMENT_COLORS] || ENVIRONMENT_COLORS.sandbox;
 
   const canDownloadReport = ['completed', 'failed', 'stopped_quota'].includes(run.status);
 
@@ -94,27 +92,27 @@ export function RunHeader({ run }: RunHeaderProps) {
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 px-6 py-4">
-      <div className="flex items-center justify-between">
+    <div className="border-b border-slate-200 bg-white/80 backdrop-blur px-6 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         {/* Left: Run ID and status */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
+            <h1 className="text-lg font-semibold text-slate-900">
               Run {run.id.split('-').pop()}
             </h1>
-            <div className="text-sm text-gray-500 mt-1">
+            <div className="text-xs text-slate-500 mt-1">
               {run.startedAt ? new Date(run.startedAt).toLocaleString() : '--'}
             </div>
           </div>
 
           <span
-            className={`px-3 py-1 text-sm font-semibold rounded border ${statusColor}`}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${statusColor}`}
           >
             {run.status.toUpperCase()}
           </span>
 
           <span
-            className={`px-3 py-1 text-sm font-semibold rounded border ${envColor}`}
+            className={`px-2.5 py-1 text-xs font-semibold rounded-full border ${envColor}`}
           >
             {environment.toUpperCase()}
           </span>
@@ -124,9 +122,9 @@ export function RunHeader({ run }: RunHeaderProps) {
         <div className="flex items-center gap-6">
           {/* Risk score */}
           <div className="text-right">
-            <div className="text-xs text-gray-500 font-medium">RISK SCORE</div>
+            <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Risk Score</div>
             <div
-              className={`text-3xl font-bold ${getRiskScoreColor(run.riskScore ?? null)}`}
+              className={`text-2xl font-semibold ${getRiskScoreColor(run.riskScore ?? null)}`}
             >
               {run.riskScore ?? '--'}
             </div>
@@ -134,8 +132,8 @@ export function RunHeader({ run }: RunHeaderProps) {
 
           {/* Duration */}
           <div className="text-right">
-            <div className="text-xs text-gray-500 font-medium">DURATION</div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-[10px] uppercase tracking-wide text-slate-500 font-semibold">Duration</div>
+            <div className="text-base font-semibold text-slate-900">
               {formatDuration(run.startedAt ?? null, run.endedAt ?? null)}
             </div>
           </div>
@@ -145,9 +143,9 @@ export function RunHeader({ run }: RunHeaderProps) {
             <button
               onClick={handleDownloadReport}
               disabled={downloading}
-              className={`px-4 py-2 rounded font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
                 downloading
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed'
                   : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
             >

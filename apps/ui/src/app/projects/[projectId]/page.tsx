@@ -3,7 +3,11 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@cogumi/db';
 import { getOrgId } from '@/lib/session';
 import Link from 'next/link';
-import { TokenManagement } from '@/components/projects/TokenManagement';
+import { AppHeader } from '@/components/nav/AppHeader';
+import { ProjectHeader } from '@/components/project/ProjectHeader';
+import { ConnectStatusCard } from '@/components/project/ConnectStatusCard';
+import { QuickActions } from '@/components/project/QuickActions';
+import { RunsTable } from '@/components/project/RunsTable';
 
 export default async function ProjectPage({ params }: { params: { projectId: string } }) {
   const session = await auth();
@@ -19,7 +23,6 @@ export default async function ProjectPage({ params }: { params: { projectId: str
       _count: {
         select: {
           runs: true,
-          tokens: true,
         },
       },
     },
@@ -29,82 +32,72 @@ export default async function ProjectPage({ params }: { params: { projectId: str
     redirect('/dashboard');
   }
 
-  const getEnvironmentBadge = (env: string) => {
-    const badges = {
-      sandbox: 'bg-blue-100 text-blue-800',
-      staging: 'bg-yellow-100 text-yellow-800',
-      prod: 'bg-red-100 text-red-800',
-    };
-    return badges[env as keyof typeof badges] || badges.sandbox;
-  };
+  const activeTokenCount = await prisma.sidecarToken.count({
+    where: { projectId: project.id, status: 'active' },
+  });
+
+  const latestToken = await prisma.sidecarToken.findFirst({
+    where: { projectId: project.id },
+    orderBy: { lastSeenAt: 'desc' },
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </Link>
-              <h1 className="text-xl font-bold text-gray-900">{project.name}</h1>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getEnvironmentBadge(project.environment)}`}>
-                {project.environment}
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
+      <AppHeader
+        title="Project Overview"
+        backHref="/dashboard"
+        backLabel="Dashboard"
+        rightSlot={
+          <Link
+            href={`/projects/${params.projectId}/settings`}
+            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+          >
+            Settings
+          </Link>
+        }
+      />
+
+      <main className="mx-auto max-w-7xl px-6 py-8">
+        <ProjectHeader
+          name={project.name}
+          environment={project.environment}
+          lastSeenAt={latestToken?.lastSeenAt?.toISOString() ?? null}
+          rightSlot={
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-500">
+                Total runs: <span className="font-semibold text-slate-700">{project._count.runs}</span>
               </span>
             </div>
-            <Link href="/dashboard" className="text-sm text-gray-600 hover:text-gray-900">
-              Back to Dashboard
-            </Link>
-          </div>
-        </div>
-      </header>
+          }
+        />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Stats Cards */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="text-sm text-gray-600 mb-1">Total Runs</div>
-            <div className="text-3xl font-bold text-gray-900">{project._count.runs}</div>
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="space-y-6">
+            <ConnectStatusCard
+              tokenCount={activeTokenCount}
+              lastSeenAt={latestToken?.lastSeenAt?.toISOString() ?? null}
+              agentTestUrl={project.agentTestUrl}
+            />
+            <RunsTable projectId={params.projectId} />
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="text-sm text-gray-600 mb-1">Active Tokens</div>
-            <div className="text-3xl font-bold text-gray-900">{project._count.tokens}</div>
-          </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="text-sm text-gray-600 mb-1">Environment</div>
-            <div className="text-2xl font-semibold text-gray-900 capitalize">{project.environment}</div>
-          </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6" aria-label="Tabs">
-              <button className="border-b-2 border-blue-600 py-4 px-1 text-sm font-medium text-blue-600">
-                Tokens
-              </button>
-              <Link 
+          <div className="space-y-6">
+            <QuickActions projectId={params.projectId} agentTestUrl={project.agentTestUrl} />
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[var(--app-shadow-card)]">
+              <h3 className="text-sm font-semibold text-slate-900">Setup Checklist</h3>
+              <ul className="mt-3 space-y-2 text-sm text-slate-600">
+                <li>Generate sidecar token</li>
+                <li>Deploy sidecar proxy</li>
+                <li>Verify heartbeat</li>
+                <li>Configure agent endpoint</li>
+              </ul>
+              <Link
                 href={`/projects/${params.projectId}/connect`}
-                className="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                className="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
               >
-                Connect Wizard
+                Continue Setup
               </Link>
-              <Link 
-                href={`/projects/${params.projectId}/settings`}
-                className="border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              >
-                Settings
-              </Link>
-            </nav>
-          </div>
-
-          {/* Token Management Section */}
-          <div className="p-6">
-            <TokenManagement projectId={params.projectId} />
+            </div>
           </div>
         </div>
       </main>

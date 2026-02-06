@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { ProjectsList } from '@/components/dashboard/ProjectsList';
 import { signOut } from '@/lib/auth';
+import { AppHeader } from '@/components/nav/AppHeader';
+import { ProjectsList } from '@/components/org/ProjectsList';
+import { RecentRunsList } from '@/components/org/RecentRunsList';
+import { TopFindingsPreview } from '@/components/org/TopFindingsPreview';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -16,38 +19,42 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* App Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900">COGUMI AI Protect</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-700">{session.user?.email}</span>
-              <form action={handleSignOut}>
-                <button
-                  type="submit"
-                  className="text-sm text-gray-600 hover:text-gray-900"
-                >
-                  Sign out
-                </button>
-              </form>
-            </div>
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#e8eef9_0%,_#f6f7fb_45%,_#f6f7fb_100%)]">
+      <AppHeader
+        title="Org Dashboard"
+        subtitle="Pre-deployment red teaming for AI agents"
+        rightSlot={
+          <>
+            <span className="text-xs text-slate-500">{session.user?.email}</span>
+            <form action={handleSignOut}>
+              <button
+                type="submit"
+                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 hover:border-slate-300 hover:text-slate-900"
+              >
+                Sign out
+              </button>
+            </form>
+          </>
+        }
+      />
+
+      <main className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-8 lg:flex-row">
+        <section className="flex-1 space-y-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-slate-900">Projects</h2>
+            <p className="text-sm text-slate-500">
+              Track every agent, environment, and run from one command center.
+            </p>
           </div>
-        </div>
-      </header>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-[var(--app-shadow-card)]">
+            <ProjectsList />
+          </div>
+        </section>
 
-      {/* Main Dashboard Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Projects</h2>
-          <p className="text-gray-600">Red team your AI agents to find security vulnerabilities</p>
-        </div>
-
-        {/* Projects List - Client Component */}
-        <ProjectsList />
+        <aside className="w-full space-y-6 lg:w-[380px]">
+          <RecentRunsList />
+          <TopFindingsPreview />
+        </aside>
       </main>
     </div>
   );
