@@ -223,22 +223,25 @@ const apiDataSource: RunDataSource = {
   subscribe(runId: string, handlers: RunStreamHandlers) {
     const eventSource = new EventSource(`/api/runs/${runId}/stream`);
 
-    eventSource.addEventListener('story_step', (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      handlers.onStoryStep(data.data);
-    });
-
-    eventSource.addEventListener('finding', (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      handlers.onFinding(data.data);
-    });
-
-    eventSource.addEventListener('run_status', (e: MessageEvent) => {
-      const data = JSON.parse(e.data);
-      if (data.data.status) {
-        handlers.onRunStatus(data.data.status);
+    // Our SSE stream uses default "message" events with a `{ type, data }` payload.
+    eventSource.onmessage = (e: MessageEvent) => {
+      try {
+        const parsed = JSON.parse(e.data);
+        switch (parsed.type) {
+          case 'story.step.created':
+            handlers.onStoryStep(parsed.data);
+            break;
+          case 'finding.created':
+            handlers.onFinding(parsed.data);
+            break;
+          case 'run.status':
+            handlers.onRunStatus(parsed.data?.status ?? parsed.data);
+            break;
+        }
+      } catch {
+        // Ignore malformed messages to keep stream resilient.
       }
-    });
+    };
 
     eventSource.onerror = () => {
       eventSource.close();

@@ -21,26 +21,110 @@ export async function GET(request: NextRequest) {
     await requireAuth();
     const orgId = await getOrgId();
 
-    const projects = await prisma.project.findMany({
-      where: { orgId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        environment: true,
-        agentTestUrl: true,
-        prodOverrideEnabled: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            runs: true,
+    const [projects, tokenAgg, latestRuns, worstRiskAgg, findings] = await Promise.all([
+      prisma.project.findMany({
+        where: { orgId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          environment: true,
+          agentTestUrl: true,
+          prodOverrideEnabled: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+            select: {
+              runs: true,
+            },
           },
         },
-      },
+      }),
+      prisma.sidecarToken.groupBy({
+        by: ['projectId'],
+        where: { orgId, status: 'active' },
+        _count: { _all: true },
+        _max: { lastSeenAt: true },
+      }),
+      prisma.run.findMany({
+        where: { orgId },
+        orderBy: { createdAt: 'desc' },
+        distinct: ['projectId'],
+        select: {
+          projectId: true,
+          createdAt: true,
+          status: true,
+          riskScore: true,
+        },
+      }),
+      prisma.run.groupBy({
+        by: ['projectId'],
+        where: { orgId, riskScore: { not: null } },
+        _max: { riskScore: true },
+      }),
+      prisma.finding.findMany({
+        where: {
+          orgId,
+          status: 'confirmed',
+        },
+        select: {
+          severity: true,
+          run: { select: { projectId: true } },
+        },
+        take: 1000,
+      }),
+    ]);
+
+    const tokenByProject = new Map(
+      tokenAgg.map((row) => [
+        row.projectId,
+        { activeTokenCount: row._count._all, lastSeenAt: row._max.lastSeenAt ?? null },
+      ])
+    );
+
+    const latestRunByProject = new Map(
+      latestRuns.map((r) => [
+        r.projectId,
+        { lastRunAt: r.createdAt, lastRunStatus: r.status, lastRunRiskScore: r.riskScore ?? null },
+      ])
+    );
+
+    const worstRiskByProject = new Map(
+      worstRiskAgg.map((row) => [row.projectId, row._max.riskScore ?? null])
+    );
+
+    const confirmedFindingsByProject = new Map<string, { confirmedCount: number; criticalHighCount: number }>();
+    for (const f of findings) {
+      const pid = f.run.projectId;
+      const prev = confirmedFindingsByProject.get(pid) || { confirmedCount: 0, criticalHighCount: 0 };
+      prev.confirmedCount += 1;
+      if (f.severity === 'critical' || f.severity === 'high') prev.criticalHighCount += 1;
+      confirmedFindingsByProject.set(pid, prev);
+    }
+
+    const enriched = projects.map((p) => {
+      const token = tokenByProject.get(p.id) || { activeTokenCount: 0, lastSeenAt: null };
+      const run = latestRunByProject.get(p.id) || { lastRunAt: null, lastRunStatus: null, lastRunRiskScore: null };
+      const worstRiskScore = worstRiskByProject.get(p.id) ?? null;
+      const findingAgg = confirmedFindingsByProject.get(p.id) || { confirmedCount: 0, criticalHighCount: 0 };
+
+      const setupComplete = token.activeTokenCount > 0 && Boolean(token.lastSeenAt) && Boolean(p.agentTestUrl);
+
+      return {
+        ...p,
+        activeTokenCount: token.activeTokenCount,
+        lastSeenAt: token.lastSeenAt,
+        setupComplete,
+        lastRunAt: run.lastRunAt,
+        lastRunStatus: run.lastRunStatus,
+        lastRunRiskScore: run.lastRunRiskScore,
+        openFindingsCount: findingAgg.confirmedCount,
+        criticalHighCount: findingAgg.criticalHighCount,
+        worstRiskScore,
+      };
     });
 
-    return NextResponse.json({ projects });
+    return NextResponse.json({ projects: enriched });
   } catch (error) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(

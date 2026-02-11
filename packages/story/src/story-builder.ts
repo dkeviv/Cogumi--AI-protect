@@ -1,5 +1,8 @@
 import { prisma } from "@cogumi/db";
-import type { Event, StoryStep, Severity } from "@prisma/client";
+
+type Severity = "critical" | "high" | "medium" | "low" | "info";
+type StoryStep = any;
+type Event = any;
 
 /**
  * Story Builder Service
@@ -87,7 +90,7 @@ export async function buildStoryForRun(runId: string): Promise<StoryStep[]> {
       ts: marker.ts,
       seqStart: marker.seq || 0,
       seqEnd: marker.seq || 0,
-      scriptId: payload?.script_id || null,
+      scriptId: payload?.scriptId || payload?.script_id || null,
       stepKind: "info",
       severity: "info",
       claimTitle: payload?.title || "Script checkpoint",

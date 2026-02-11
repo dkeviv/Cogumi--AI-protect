@@ -1,7 +1,10 @@
 import { prisma } from "@cogumi/db";
 import { getScript, type ScriptId, type ScriptStep } from "./registry";
 import { validateAgentUrl } from "@cogumi/shared";
-import type { Run, Event } from "@prisma/client";
+
+type RunRef = {
+  id: string;
+};
 
 /**
  * Script Executor
@@ -11,7 +14,7 @@ import type { Run, Event } from "@prisma/client";
  */
 
 export interface ExecutionContext {
-  run: Run;
+  run: RunRef;
   agentUrl: string;
   projectId: string;
   orgId: string;
@@ -40,10 +43,17 @@ export interface ScriptResult {
  * Execute a single script step
  */
 async function executeStep(
+  scriptId: ScriptId,
   step: ScriptStep,
   context: ExecutionContext
 ): Promise<StepResult> {
   const startTime = Date.now();
+  let agentHost = "unknown";
+  try {
+    agentHost = new URL(context.agentUrl).host || "unknown";
+  } catch {
+    // We validate agentUrl before making any outbound requests; this is only for safe labeling.
+  }
 
   // Create marker event for this step
   await prisma.event.create({
@@ -59,7 +69,8 @@ async function executeStep(
       host: "localhost",
       payloadRedacted: {
         summary: `Starting step ${step.id}: ${step.name}`,
-        script_id: step.id,
+        scriptId,
+        scriptStepId: step.id,
         title: step.name,
       },
     },
@@ -74,6 +85,27 @@ async function executeStep(
     if (!validation.valid) {
       throw new Error(`Agent URL validation failed: ${validation.error}${validation.securityNote ? ' (' + validation.securityNote + ')' : ''}`);
     }
+
+    // Record adversary prompt as a first-class event so the run replay shows the full prompt chain.
+    await prisma.event.create({
+      data: {
+        orgId: context.orgId,
+        projectId: context.projectId,
+        runId: context.run.id,
+        ts: new Date(),
+        seq: context.seqCounter.value++, // Increment seq counter
+        channel: "system",
+        type: "agent.message",
+        actor: "adversary",
+        host: agentHost,
+        payloadRedacted: {
+          summary: step.name,
+          bodyRedactedPreview: step.promptTemplate.substring(0, 2000),
+          scriptId,
+          scriptStepId: step.id,
+        },
+      },
+    });
 
     // Send prompt to agent endpoint
     const response = await fetch(context.agentUrl, {
@@ -97,7 +129,7 @@ async function executeStep(
       throw new Error(`Agent returned ${response.status}`);
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as any;
     agentResponse = data.response || data.message || JSON.stringify(data);
 
     // Create event for agent response
@@ -111,10 +143,12 @@ async function executeStep(
         channel: "system",
         type: "agent.message",
         actor: "target",
-        host: new URL(context.agentUrl).host,
+        host: agentHost,
         payloadRedacted: {
           summary: "Agent response",
-          body_redacted_preview: agentResponse.substring(0, 500),
+          bodyRedactedPreview: agentResponse.substring(0, 2000),
+          scriptId,
+          scriptStepId: step.id,
         },
         durationMs: responseTime,
       },
@@ -143,7 +177,7 @@ async function executeStep(
  * Analyze if agent complied with adversarial request
  */
 function analyzeStepResponse(
-  step: ScriptStep,
+  _step: ScriptStep,
   response: string
 ): { complied: boolean; confidence: number; evidence: string[] } {
   const responseLower = response.toLowerCase();
@@ -226,7 +260,7 @@ export async function executeScript(
 
   // Execute each step sequentially
   for (const step of script.steps) {
-    const result = await executeStep(step, context);
+    const result = await executeStep(scriptId, step, context);
     stepResults.push(result);
 
     // Small delay between steps to avoid overwhelming agent
@@ -285,6 +319,13 @@ export async function executeScript(
  */
 export async function executeAllScripts(context: ExecutionContext): Promise<ScriptResult[]> {
   const scriptIds: ScriptId[] = ["S1", "S2", "S3", "S4", "S5"];
+  return await executeScripts(scriptIds, context);
+}
+
+export async function executeScripts(
+  scriptIds: ScriptId[],
+  context: ExecutionContext
+): Promise<ScriptResult[]> {
   const results: ScriptResult[] = [];
 
   for (const scriptId of scriptIds) {

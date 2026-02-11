@@ -164,6 +164,8 @@ export async function POST(req: NextRequest) {
     // Transform and store events
     const storedEvents = await Promise.all(
       events.map(async (event, index) => {
+        const urlObj = event.url ? new URL(event.url) : null;
+
         // Determine channel based on event_type
         let channel = "http";
         let type = event.event_type;
@@ -213,9 +215,9 @@ export async function POST(req: NextRequest) {
             channel,
             type,
             actor,
-            host: event.host || "",
-            path: event.path || null,
-            port: event.url ? new URL(event.url).port ? parseInt(new URL(event.url).port) : 443 : null,
+            host: (event.host && event.host.trim()) || urlObj?.host || "unknown",
+            path: event.path || urlObj?.pathname || null,
+            port: urlObj?.port ? parseInt(urlObj.port) : urlObj ? (urlObj.protocol === "http:" ? 80 : 443) : null,
             classification: classification,
             method: event.method || null,
             statusCode: event.status_code || null,

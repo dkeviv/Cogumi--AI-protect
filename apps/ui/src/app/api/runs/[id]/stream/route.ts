@@ -47,6 +47,7 @@ export async function GET(
         // Track last seen timestamps
         let lastStoryCheck = new Date();
         let lastEventCheck = new Date();
+        let lastFindingCheck = new Date();
         let lastSeenStatus = run.status; // Track status to detect changes
 
         // Poll for new data every 1 second
@@ -65,7 +66,7 @@ export async function GET(
               for (const step of newSteps) {
                 controller.enqueue(
                   encoder.encode(
-                    `data: ${JSON.stringify({ type: "story_step", data: step })}\n\n`
+                    `data: ${JSON.stringify({ type: "story.step.created", data: step })}\n\n`
                   )
                 );
               }
@@ -93,6 +94,26 @@ export async function GET(
               lastEventCheck = new Date();
             }
 
+            // Check for new findings
+            const newFindings = await db.finding.findMany({
+              where: {
+                runId,
+                createdAt: { gt: lastFindingCheck },
+              },
+              orderBy: { createdAt: "asc" },
+            });
+
+            if (newFindings.length > 0) {
+              for (const finding of newFindings) {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "finding.created", data: finding })}\n\n`
+                  )
+                );
+              }
+              lastFindingCheck = new Date();
+            }
+
             // Check for run status changes
             const currentRun = await db.run.findUnique({
               where: { id: runId },
@@ -104,7 +125,7 @@ export async function GET(
               controller.enqueue(
                 encoder.encode(
                   `data: ${JSON.stringify({
-                    type: "run_status",
+                    type: "run.status",
                     data: { status: currentRun.status, endedAt: currentRun.endedAt },
                   })}\n\n`
                 )

@@ -12,10 +12,11 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const anyDb = db as any;
     const orgId = await getOrgId();
     const runId = params.id;
 
-    const run = await db.run.findFirst({
+    const run = await anyDb.run.findFirst({
       where: {
         id: runId,
         orgId,
@@ -26,7 +27,29 @@ export async function GET(
             id: true,
             name: true,
             environment: true,
+            agentTestUrl: true,
+            toolDomains: true,
+            internalSuffixes: true,
+            redTeamConfig: {
+              select: {
+                enabledStyleIds: true,
+                intensity: true,
+                versionPin: true,
+              },
+            },
           },
+        },
+        results: {
+          select: {
+            id: true,
+            scriptId: true,
+            score: true,
+            severity: true,
+            status: true,
+            summary: true,
+            createdAt: true,
+          },
+          orderBy: { scriptId: "asc" },
         },
       },
     });

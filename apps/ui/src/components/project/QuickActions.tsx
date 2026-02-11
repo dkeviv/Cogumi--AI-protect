@@ -67,10 +67,10 @@ export function QuickActions({ projectId, agentTestUrl }: QuickActionsProps) {
           {creating ? 'Starting run...' : 'Start New Run'}
         </button>
         <Link
-          href={`/projects/${projectId}/settings`}
+          href={`/projects/${projectId}/runs`}
           className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50"
         >
-          Project Settings
+          View Runs
         </Link>
       </div>
 

@@ -4,8 +4,11 @@ import { getOrgId } from "@/lib/session";
 import { z } from "zod";
 import { canCreateRun } from "@/lib/quota-service";
 
+const ScriptIdSchema = z.enum(["S1", "S2", "S3", "S4", "S5"]);
+
 const CreateRunSchema = z.object({
   mode: z.enum(["campaign"]).optional().default("campaign"),
+  scriptsEnabled: z.array(ScriptIdSchema).optional(),
 });
 
 /**
@@ -24,6 +27,7 @@ export async function POST(
   { params }: { params: { projectId: string } }
 ) {
   try {
+    const anyDb = db as any;
     const orgId = await getOrgId();
     const projectId = params.projectId;
 
@@ -77,13 +81,27 @@ export async function POST(
       );
     }
 
-    // Create run
-    const run = await db.run.create({
+    const scriptsEnabled = validation.data.scriptsEnabled ?? ["S1", "S2", "S3", "S4", "S5"];
+
+    // Create run (snapshot configuration for reproducibility and enterprise auditability)
+    const run = await anyDb.run.create({
       data: {
         orgId,
         projectId,
         status: "queued",
         createdBy: "user", // TODO: get actual user ID from session
+        configSnapshot: {
+          project: {
+            environment: project.environment,
+            prodOverrideEnabled: project.prodOverrideEnabled,
+            agentTestUrl: project.agentTestUrl,
+            toolDomains: project.toolDomains,
+            internalSuffixes: project.internalSuffixes,
+            retentionDays: project.retentionDays,
+          },
+          scriptsEnabled,
+          createdAt: new Date().toISOString(),
+        },
       },
     });
 

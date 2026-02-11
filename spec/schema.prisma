@@ -43,6 +43,17 @@ enum FindingStatus {
   suspected
 }
 
+enum FindingTriageStatus {
+  open
+  fixed
+  accepted
+}
+
+enum SavedPromptKind {
+  adversary
+  agent
+}
+
 model Organization {
   id        String       @id @default(uuid())
   name      String
@@ -127,6 +138,7 @@ model Run {
   endedAt    DateTime?
   createdAt  DateTime    @default(now())
   createdBy  String?
+  configSnapshot Json?
 
   project    Project     @relation(fields: [projectId], references: [id])
   events     Event[]
@@ -213,8 +225,19 @@ model ScriptResult {
 model Finding {
   id         String       @id @default(uuid())
   orgId      String
+  projectId  String
   runId      String
   scriptId   String
+  fingerprint String
+  capability String?
+  exploitabilityScore Int @default(3)
+  blastRadiusScore    Int @default(3)
+  triageStatus FindingTriageStatus @default(open)
+  ownerUserId String?
+  eta         DateTime?
+  whyItWorks  String?
+  verificationStep String?
+
   title      String
   severity   Severity
   status     FindingStatus
@@ -227,8 +250,12 @@ model Finding {
   createdAt  DateTime @default(now())
 
   run        Run          @relation(fields: [runId], references: [id])
+  project    Project      @relation(fields: [projectId], references: [id])
+  owner      User?        @relation(fields: [ownerUserId], references: [id])
 
   @@index([runId])
+  @@index([orgId, projectId])
+  @@index([projectId, fingerprint])
 }
 
 model Report {
@@ -278,4 +305,25 @@ model PromptVariant {
   @@index([projectId])
   @@index([orgId])
   @@unique([projectId, scriptId, scriptStepId, styleId, version])
+}
+
+model SavedPrompt {
+  id           String   @id @default(uuid())
+  orgId        String
+  projectId    String?
+  kind         SavedPromptKind
+  title        String
+  promptText   String
+  tags         String[] @default([])
+  scriptId     String?
+  scriptStepId String?
+  sourceRunId  String?
+  sourceEventId String?
+  createdAt    DateTime @default(now())
+
+  project      Project? @relation(fields: [projectId], references: [id])
+
+  @@index([orgId])
+  @@index([projectId])
+  @@index([orgId, kind])
 }

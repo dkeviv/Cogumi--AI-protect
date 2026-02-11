@@ -129,6 +129,41 @@ cd apps/sidecar
 
 ---
 
+## 🎭 UI Development Without Backend (Fixture Mode)
+
+**Want to work on the UI without running the full stack?**
+
+We include **fixture mode** for rapid UI development:
+
+```bash
+cd apps/ui
+
+# Enable fixture mode
+echo "NEXT_PUBLIC_USE_FIXTURES=true" >> .env.local
+
+# Start dev server
+npm run dev
+
+# Open http://localhost:3000
+# UI loads with realistic mock data from /fixtures/*.json
+```
+
+**What works in fixture mode:**
+- ✅ Dashboard with 3 mock projects
+- ✅ Project overview with runs list
+- ✅ Run detail page with exploit feed, evidence, timeline
+- ✅ Report page with markdown download
+- ✅ All UI components and responsive design
+
+**What doesn't work:**
+- ❌ Live SSE streaming
+- ❌ Mutations (create/update/delete)
+- ❌ Real authentication
+
+📖 **Full fixture mode documentation:** [apps/ui/FIXTURE_MODE.md](./apps/ui/FIXTURE_MODE.md)
+
+---
+
 ## 📖 Alternative Setup (Production-Ready)
 
 ### Prerequisites

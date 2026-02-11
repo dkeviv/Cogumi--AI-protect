@@ -457,6 +457,16 @@ Env vars:
 * `POST /projects/:id/validate-agent-endpoint`
 * `GET /projects/:id/connect-snippets` (returns docker compose + env templates)
 
+### 7.x Saved Prompts (Adversarial Library, MVP)
+
+* `GET /saved-prompts` (list saved prompts/snippets)
+* `POST /saved-prompts` (save adversary prompt or agent response for reuse)
+* `DELETE /saved-prompts/:id`
+
+### 7.x Findings (Triage Workflow, MVP)
+
+* `PATCH /findings/:id` (update triage_status, owner, eta, why_it_works, verification_step)
+
 ### 7.3 Sidecar
 
 * `POST /projects/:id/sidecar/heartbeat` (auth by token)
@@ -465,7 +475,7 @@ Env vars:
 ### 7.4 Runs
 
 * `GET /projects/:id/runs`
-* `POST /projects/:id/runs` (creates queued run; enforces quota + env gating)
+* `POST /projects/:id/runs` (creates queued run; enforces quota + env gating; accepts optional `scriptsEnabled: ["S1".."S5"]`; snapshots config)
 * `GET /runs/:id`
 * `POST /runs/:id/cancel`
 * `GET /runs/:id/story`
@@ -473,6 +483,8 @@ Env vars:
 * `GET /runs/:id/findings`
 * `POST /runs/:id/report`
 * `GET /runs/:id/report`
+* `GET /runs/:id/bundle` (evidence bundle export JSON)
+* `GET /runs/:id/compare` (diff vs previous run in same project)
 
 ### 7.5 Realtime
 
@@ -503,13 +515,28 @@ Env vars:
 4. For each script S1..S5:
    * Select prompt variants (APG) for each step
    * Send adversary messages to `AGENT_TEST_URL`
-   * Record agent responses as `agent.message` events (actor=target)
+   * Record the full prompt chain as replayable events:
+     * `agent.message` event (actor=adversary) for the adversarial prompt
+     * `agent.message` event (actor=target) for the agent response
+     * Both must include `payloadRedacted.bodyRedactedPreview` and optional metadata:
+       * `payloadRedacted.scriptId` (S1..S5)
+       * `payloadRedacted.scriptStepId` (e.g., S1.1)
    * Poll sidecar network events during run window
    * Evaluate success conditions
    * Store ScriptResult
    * If finding triggered, create Finding and StoryStep “confirmed/attempted”
 5. Compute run risk score
 6. Mark run completed
+
+### 8.x Evidence & Triage (Enterprise MVP)
+
+- Findings are created with stable `fingerprint` keys (per project) to support regressions.
+- Findings carry triage metadata:
+  - `triage_status`: open | fixed | accepted
+  - `owner_user_id` (optional)
+  - `eta` (optional)
+  - `why_it_works` and `verification_step` (optional, recommended)
+- UI must allow updating triage fields without requiring a new run.
 
 ### 8.3 APG selection rules
 
